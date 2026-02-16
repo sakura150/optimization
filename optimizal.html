@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Лаб-раб</title>
+    <link rel="stylesheet" href="style.css">
+    <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
+</head>
+<body>
+    <div class="container">
+        <h1>Лаб 1</h1>
+    
+        <div class="top-panel">
+            <div class="param-card">
+                <label>Функция:</label>
+                <select id="function-select">
+                    <option value="rastrigin">Растригина</option>
+                    <option value="himmelblau">Химмельблау</option>
+                    <option value="rosenbrock" selected>Розенброка</option>
+                    <option value="sphere">Сфера</option>
+                    <option value="bukin">Букина</option>
+                </select>
+            </div>
+            
+            <div class="param-card">
+                <label>X₀:</label>
+                <input type="number" id="start-x" value="-1" step="0.1">
+            </div>
+            
+            <div class="param-card">
+                <label>Y₀:</label>
+                <input type="number" id="start-y" value="-1" step="0.1">
+            </div>
+            
+            <div class="param-card">
+                <label>Шаг (t):</label>
+                <input type="number" id="step-size" value="0.5" step="0.01" min="0.01">
+            </div>
+            
+            <div class="param-card">
+                <label>Итерации:</label>
+                <input type="number" id="max-iter" value="100" min="1" max="1000">
+            </div>
+            
+            <div class="param-card">
+                <label>Задержка (с):</label>
+                <input type="number" id="delay" value="0.5" step="0.1" min="0">
+            </div>
+            
+            <div class="button-group">
+                <button id="start-btn" style = "font-size: 11px; text-align: centre;">Выполнить</button>
+                <button id="stop-btn" style = "font-size: 11px; text-align: centre;" disabled>Стоп</button>
+            </div>
+        </div>
+        
+        <div class="middle-panel">
+
+            <div class="visualization-panel">
+                <h2>График функции и траектория спуска</h2>
+                <div id="plot"></div>
+                <div id="current-point" class="current-point-info">
+                    x: -1.000 | y: -1.000 | z: 4.000
+                </div>
+            </div>
+            
+            <div class="right-panel">
+                <div class="results-panel">
+                    <h2>Результаты</h2>
+                    <div id="iterations"></div>
+                    <div id="final-result" class="result-summary" style="display: none;"></div>
+                </div>
+            
+                <div class="axis-panel">
+                    <h2>Оси координат</h2>
+                    <div class="axis-grid">
+                        <div class="axis-item">
+                            <label>X интервал:</label>
+                            <input type="text" id="x-axis-range" value="-5,5">
+                        </div>
+                        <div class="axis-item">
+                            <label>Y интервал:</label>
+                            <input type="text" id="y-axis-range" value="-5,5">
+                        </div>
+                        <div class="axis-item">
+                            <label>Z масштаб:</label>
+                            <input type="number" id="z-scale" value="25" min="1" max="100">
+                        </div>
+                        <div class="checkbox-item">
+                            <input type="checkbox" id="show-grid" checked>
+                            <label>Показать сетку</label>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="bottom-panel"></div>
+    </div>
+
+    <script src = "script.js"></script>
+</body>
+</html>
