@@ -237,6 +237,7 @@ const functions = {
             updateIterations(pathData, 0);
             
             let prevX, prevY;
+            let prevSatisfied = false;
             
             for (let k = 0; k < maxIter && isRunning && !stopRequested; k++) {
                 const gx = gradX(x, y);
@@ -269,7 +270,9 @@ const functions = {
                 const dy = Math.abs(y - prevY);
                 const dz = Math.abs(newZ - func(prevX, prevY));
                 
-                if (dx < epsilon2 && dy < epsilon2 && dz < epsilon2) break;
+                const currentSatisfied = (dx < epsilon2 && dy < epsilon2 && dz < epsilon2);
+                if (currentSatisfied && prevSatisfied) break;
+                prevSatisfied = currentSatisfied;
                 
                 updatePlot(func, pathData, k + 1);
                 updateIterations(pathData, k + 1);
