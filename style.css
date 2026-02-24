@@ -262,3 +262,313 @@
         .bottom-panel {
             margin-top: 5px;
         }
+
+        /* Дополнения к существующему style.css */
+
+/* Стили для вкладок */
+.tabs {
+    display: flex;
+    gap: 5px;
+    margin-bottom: 15px;
+    border-bottom: 2px solid #3498db;
+    padding-bottom: 5px;
+}
+
+.tab-button {
+    background-color: #ecf0f1;
+    border: none;
+    padding: 8px 15px;
+    border-radius: 5px 5px 0 0;
+    cursor: pointer;
+    font-size: 0.9rem;
+    font-weight: bold;
+    color: #2c3e50;
+    transition: all 0.3s;
+}
+
+.tab-button:hover {
+    background-color: #d5dbdb;
+}
+
+.tab-button.active {
+    background-color: #3498db;
+    color: white;
+}
+
+.tab-content {
+    display: none;
+    height: calc(100% - 50px);
+}
+
+.tab-content.active {
+    display: block;
+}
+
+/* Стили для лабораторной работы №2 */
+.lab2-header {
+    margin-bottom: 15px;
+}
+
+.lab2-description {
+    color: #7f8c8d;
+    font-size: 0.9rem;
+    margin-top: 5px;
+}
+
+.lab2-container {
+    display: flex;
+    gap: 20px;
+    height: calc(100vh - 250px);
+    min-height: 500px;
+}
+
+.lab2-input-panel {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+    overflow-y: auto;
+    padding-right: 10px;
+}
+
+.lab2-card {
+    background-color: #f8f9fa;
+    border: 1px solid #ddd;
+    border-radius: 8px;
+    padding: 15px;
+}
+
+.lab2-card h3 {
+    color: #2c3e50;
+    margin-bottom: 15px;
+    font-size: 1rem;
+    border-bottom: 1px solid #bdc3c7;
+    padding-bottom: 5px;
+}
+
+.quadratic-form {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.quadratic-row, .linear-row {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    flex-wrap: wrap;
+}
+
+.quadratic-row input, .linear-row input {
+    width: 70px;
+    padding: 5px;
+    border: 1px solid #bdc3c7;
+    border-radius: 4px;
+}
+
+.constraint-row {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    margin-bottom: 10px;
+    flex-wrap: wrap;
+}
+
+.constraint-row input {
+    width: 70px;
+    padding: 5px;
+    border: 1px solid #bdc3c7;
+    border-radius: 4px;
+}
+
+.remove-constraint {
+    background-color: #e74c3c;
+    color: white;
+    border: none;
+    width: 24px;
+    height: 24px;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.add-constraint {
+    background-color: #2ecc71;
+    color: white;
+    border: none;
+    padding: 8px 12px;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 0.9rem;
+    margin-top: 10px;
+    width: 100%;
+}
+
+.param-row {
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+}
+
+.param-row label {
+    font-weight: bold;
+    color: #2c3e50;
+    font-size: 0.9rem;
+}
+
+.param-row input {
+    padding: 6px;
+    border: 1px solid #bdc3c7;
+    border-radius: 4px;
+}
+
+.lab2-button-group {
+    display: flex;
+    gap: 10px;
+    margin-top: 10px;
+}
+
+.lab2-btn {
+    flex: 1;
+    padding: 10px;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    font-weight: bold;
+    transition: background-color 0.3s;
+}
+
+.lab2-btn.primary {
+    background-color: #3498db;
+    color: white;
+}
+
+.lab2-btn.primary:hover {
+    background-color: #2980b9;
+}
+
+.lab2-btn.secondary {
+    background-color: #95a5a6;
+    color: white;
+}
+
+.lab2-btn.secondary:hover {
+    background-color: #7f8c8d;
+}
+
+.lab2-results-panel {
+    flex: 1.5;
+    background-color: #f8f9fa;
+    border: 1px solid #ddd;
+    border-radius: 8px;
+    padding: 15px;
+    display: flex;
+    flex-direction: column;
+    overflow-y: auto;
+}
+
+.lab2-results-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 15px;
+}
+
+.lab2-results-header h3 {
+    color: #2c3e50;
+    margin: 0;
+}
+
+.qp-status {
+    padding: 5px 10px;
+    border-radius: 4px;
+    font-weight: bold;
+    font-size: 0.9rem;
+}
+
+.qp-status.solved {
+    background-color: #2ecc71;
+    color: white;
+}
+
+.qp-status.error {
+    background-color: #e74c3c;
+    color: white;
+}
+
+.result-section {
+    margin-bottom: 20px;
+}
+
+.result-section h4 {
+    color: #34495e;
+    margin-bottom: 10px;
+    font-size: 0.95rem;
+}
+
+.qp-solution, .qp-lambda {
+    background-color: white;
+    border: 1px solid #ddd;
+    border-radius: 6px;
+    padding: 10px;
+}
+
+.solution-item, .lambda-item {
+    display: flex;
+    justify-content: space-between;
+    padding: 5px 0;
+    border-bottom: 1px solid #ecf0f1;
+}
+
+.solution-item:last-child, .lambda-item:last-child {
+    border-bottom: none;
+}
+
+.solution-item span, .lambda-item span {
+    font-weight: bold;
+    color: #2c3e50;
+}
+
+.simplex-iterations {
+    background-color: white;
+    border: 1px solid #ddd;
+    border-radius: 6px;
+    padding: 10px;
+    max-height: 200px;
+    overflow-y: auto;
+    font-family: monospace;
+    font-size: 0.8rem;
+}
+
+.simplex-iteration {
+    padding: 5px;
+    border-bottom: 1px solid #ecf0f1;
+}
+
+.simplex-iteration:last-child {
+    border-bottom: none;
+}
+
+.simplex-iteration.current {
+    background-color: #e8f4fd;
+    font-weight: bold;
+}
+
+.lab2-visualization {
+    margin-top: 20px;
+}
+
+.lab2-visualization h4 {
+    color: #34495e;
+    margin-bottom: 10px;
+}
+
+/* Адаптация для мобильных устройств */
+@media (max-width: 768px) {
+    .lab2-container {
+        flex-direction: column;
+    }
+}
