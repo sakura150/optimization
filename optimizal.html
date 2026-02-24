@@ -3,101 +3,200 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Лаб-раб</title>
+    <title>Лабораторные работы по оптимизации</title>
     <link rel="stylesheet" href="style.css">
     <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
 </head>
 <body>
     <div class="container">
-        <h1>Лаб 1</h1>
-    
-        <div class="top-panel">
-            <div class="param-card">
-                <label>Функция:</label>
-                <select id="function-select">
-                    <option value="rastrigin">Растригина</option>
-                    <option value="himmelblau">Химмельблау</option>
-                    <option value="rosenbrock" selected>Розенброка</option>
-                    <option value="sphere">Сфера</option>
-                    <option value="bukin">Букина</option>
-                </select>
-            </div>
-            
-            <div class="param-card">
-                <label>X₀:</label>
-                <input type="number" id="start-x" value="-1" step="0.1">
-            </div>
-            
-            <div class="param-card">
-                <label>Y₀:</label>
-                <input type="number" id="start-y" value="-1" step="0.1">
-            </div>
-            
-            <div class="param-card">
-                <label>Шаг (t):</label>
-                <input type="number" id="step-size" value="0.5" step="0.01" min="0.01">
-            </div>
-            
-            <div class="param-card">
-                <label>Итерации:</label>
-                <input type="number" id="max-iter" value="100" min="1" max="1000">
-            </div>
-            
-            <div class="param-card">
-                <label>Задержка (с):</label>
-                <input type="number" id="delay" value="0.5" step="0.1" min="0">
-            </div>
-            
-            <div class="button-group">
-                <button id="start-btn" style = "font-size: 11px; text-align: centre;">Выполнить</button>
-                <button id="stop-btn" style = "font-size: 11px; text-align: centre;" disabled>Стоп</button>
-            </div>
+        <h1>Лабораторные работы по методам оптимизации</h1>
+        
+        <!-- Вкладки -->
+        <div class="tabs">
+            <button class="tab-button active" onclick="openTab(event, 'lab1')">Лабораторная работа №1: Градиентный спуск</button>
+            <button class="tab-button" onclick="openTab(event, 'lab2')">Лабораторная работа №2: Квадратичное программирование</button>
         </div>
         
-        <div class="middle-panel">
-
-            <div class="visualization-panel">
-                <h2>График функции и траектория спуска</h2>
-                <div id="plot"></div>
-                <div id="current-point" class="current-point-info">
-                    x: -1.000 | y: -1.000 | z: 4.000
+        <!-- Лабораторная работа №1 (существующая) -->
+        <div id="lab1" class="tab-content active">
+            <div class="top-panel">
+                <div class="param-card">
+                    <label>Функция:</label>
+                    <select id="function-select">
+                        <option value="rastrigin">Растригина</option>
+                        <option value="himmelblau">Химмельблау</option>
+                        <option value="rosenbrock" selected>Розенброка</option>
+                        <option value="sphere">Сфера</option>
+                        <option value="bukin">Букина</option>
+                    </select>
+                </div>
+                
+                <div class="param-card">
+                    <label>X₀:</label>
+                    <input type="number" id="start-x" value="-1" step="0.1">
+                </div>
+                
+                <div class="param-card">
+                    <label>Y₀:</label>
+                    <input type="number" id="start-y" value="-1" step="0.1">
+                </div>
+                
+                <div class="param-card">
+                    <label>Шаг (t):</label>
+                    <input type="number" id="step-size" value="0.5" step="0.01" min="0.01">
+                </div>
+                
+                <div class="param-card">
+                    <label>Итерации:</label>
+                    <input type="number" id="max-iter" value="100" min="1" max="1000">
+                </div>
+                
+                <div class="param-card">
+                    <label>Задержка (с):</label>
+                    <input type="number" id="delay" value="0.5" step="0.1" min="0">
+                </div>
+                
+                <div class="button-group">
+                    <button id="start-btn" style="font-size: 11px;">Выполнить</button>
+                    <button id="stop-btn" style="font-size: 11px;" disabled>Стоп</button>
                 </div>
             </div>
             
-            <div class="right-panel">
-                <div class="results-panel">
-                    <h2>Результаты</h2>
-                    <div id="iterations"></div>
-                    <div id="final-result" class="result-summary" style="display: none;"></div>
+            <div class="middle-panel">
+                <div class="visualization-panel">
+                    <h2>График функции и траектория спуска</h2>
+                    <div id="plot"></div>
+                    <div id="current-point" class="current-point-info">
+                        x: -1.000 | y: -1.000 | z: 4.000
+                    </div>
                 </div>
-            
-                <div class="axis-panel">
-                    <h2>Оси координат</h2>
-                    <div class="axis-grid">
-                        <div class="axis-item">
-                            <label>X интервал:</label>
-                            <input type="text" id="x-axis-range" value="-5,5">
-                        </div>
-                        <div class="axis-item">
-                            <label>Y интервал:</label>
-                            <input type="text" id="y-axis-range" value="-5,5">
-                        </div>
-                        <div class="axis-item">
-                            <label>Z масштаб:</label>
-                            <input type="number" id="z-scale" value="25" min="1" max="100">
-                        </div>
-                        <div class="checkbox-item">
-                            <input type="checkbox" id="show-grid" checked>
-                            <label>Показать сетку</label>
+                
+                <div class="right-panel">
+                    <div class="results-panel">
+                        <h2>Результаты</h2>
+                        <div id="iterations"></div>
+                        <div id="final-result" class="result-summary" style="display: none;"></div>
+                    </div>
+                
+                    <div class="axis-panel">
+                        <h2>Оси координат</h2>
+                        <div class="axis-grid">
+                            <div class="axis-item">
+                                <label>X интервал:</label>
+                                <input type="text" id="x-axis-range" value="-5,5">
+                            </div>
+                            <div class="axis-item">
+                                <label>Y интервал:</label>
+                                <input type="text" id="y-axis-range" value="-5,5">
+                            </div>
+                            <div class="axis-item">
+                                <label>Z масштаб:</label>
+                                <input type="number" id="z-scale" value="25" min="1" max="100">
+                            </div>
+                            <div class="checkbox-item">
+                                <input type="checkbox" id="show-grid" checked>
+                                <label>Показать сетку</label>
+                            </div>
                         </div>
                     </div>
                 </div>
             </div>
         </div>
         
-        <div class="bottom-panel"></div>
+        <!-- Лабораторная работа №2: Квадратичное программирование -->
+        <div id="lab2" class="tab-content">
+            <div class="lab2-header">
+                <h2>Решение задачи квадратичного программирования</h2>
+                <p class="lab2-description">Метод основан на условиях Куна-Таккера и симплекс-методе с искусственными переменными</p>
+            </div>
+            
+            <div class="lab2-container">
+                <!-- Левая панель с вводом данных -->
+                <div class="lab2-input-panel">
+                    <div class="lab2-card">
+                        <h3>Целевая функция (минимизация)</h3>
+                        <div class="quadratic-form">
+                            <div class="quadratic-row">
+                                <input type="number" id="q11" value="2" step="0.1"> x₁² + 
+                                <input type="number" id="q12" value="2" step="0.1"> x₁x₂ + 
+                                <input type="number" id="q22" value="2" step="0.1"> x₂²
+                            </div>
+                            <div class="linear-row">
+                                + <input type="number" id="c1" value="-4" step="0.1"> x₁ 
+                                + <input type="number" id="c2" value="-6" step="0.1"> x₂
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="lab2-card">
+                        <h3>Ограничения</h3>
+                        <div id="constraints-container">
+                            <div class="constraint-row">
+                                <input type="number" id="a11" value="1" step="0.1"> x₁ + 
+                                <input type="number" id="a12" value="2" step="0.1"> x₂ ≤ 
+                                <input type="number" id="b1" value="2" step="0.1">
+                                <button class="remove-constraint" onclick="removeConstraint(this)" style="display:none;">✕</button>
+                            </div>
+                        </div>
+                        <button class="add-constraint" onclick="addConstraint()">+ Добавить ограничение</button>
+                    </div>
+                    
+                    <div class="lab2-card">
+                        <h3>Параметры решения</h3>
+                        <div class="param-row">
+                            <label>Макс. итераций симплекс-метода:</label>
+                            <input type="number" id="simplex-max-iter" value="100" min="10" max="1000">
+                        </div>
+                    </div>
+                    
+                    <div class="lab2-button-group">
+                        <button id="solve-qp-btn" class="lab2-btn primary">Решить задачу</button>
+                        <button id="reset-qp-btn" class="lab2-btn secondary">Сбросить</button>
+                        <button id="example-qp-btn" class="lab2-btn secondary">Пример из методички</button>
+                    </div>
+                </div>
+                
+                <!-- Правая панель с результатами -->
+                <div class="lab2-results-panel">
+                    <div class="lab2-results-header">
+                        <h3>Результаты решения</h3>
+                        <div id="qp-status" class="qp-status"></div>
+                    </div>
+                    
+                    <div class="lab2-results-body">
+                        <div class="result-section">
+                            <h4>Оптимальное решение</h4>
+                            <div id="qp-solution" class="qp-solution">
+                                <div class="solution-item">x₁* = <span id="sol-x1">—</span></div>
+                                <div class="solution-item">x₂* = <span id="sol-x2">—</span></div>
+                                <div class="solution-item">f(x*) = <span id="sol-f">—</span></div>
+                            </div>
+                        </div>
+                        
+                        <div class="result-section">
+                            <h4>Множители Лагранжа</h4>
+                            <div id="qp-lambda" class="qp-lambda">
+                                <div class="lambda-item">λ = <span id="sol-lambda">—</span></div>
+                            </div>
+                        </div>
+                        
+                        <div class="result-section">
+                            <h4>Итерации симплекс-метода</h4>
+                            <div id="simplex-iterations" class="simplex-iterations">
+                                <!-- Сюда будут добавляться итерации -->
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="lab2-visualization">
+                        <h4>График функции и допустимая область</h4>
+                        <div id="qp-plot" style="width:100%; height:250px;"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
     </div>
 
-    <script src = "script.js"></script>
+    <script src="script.js"></script>
 </body>
 </html>
