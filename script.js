@@ -1,5 +1,6 @@
 // Существующий код из первой лабораторной работы
 
+
 const functions = {
     sphere: {
         name: 'Сфера',
@@ -719,6 +720,7 @@ class QuadraticProgrammingSolver {
     }
     
     // ШАГ 6: Решение вспомогательной задачи симплекс-методом
+
     solveAuxiliaryProblem() { 
         this.iterations = [];
         
@@ -730,8 +732,10 @@ class QuadraticProgrammingSolver {
         
         this.iterations.push("");
 
+
         this.iterations.push("ШАГ 6: Решение вспомогательной задачи симплекс-методом");
      
+
         
         // Создаем экземпляр симплекс-метода
         this.simplex = new SimplexMethod( // Используем глобальный класс SimplexMethod
@@ -742,7 +746,9 @@ class QuadraticProgrammingSolver {
         );
         
         // Выводим начальную таблицу
+
         this.iterations.push("\n Начальная симплекс-таблица:");
+
         let initialTable = this.simplex.formatTable();
         this.iterations.push(...initialTable);
         
@@ -753,25 +759,33 @@ class QuadraticProgrammingSolver {
         while (iter < maxIter) {
             let pivotCol = this.simplex.selectPivotColumn();
             if (pivotCol === -1) {
+
                 this.iterations.push("\n Все коэффициенты в строке F ≤ 0. Оптимум достигнут.");
+
                 break;
             }
             
             let pivotRow = this.simplex.selectPivotRow(pivotCol);
             if (pivotRow === -1) {
+
                 this.iterations.push("\n Задача не ограничена.");
+
                 break;
             }
             
             let enteringVar = auxProblem.varNames[pivotCol - 1];
             
+
             this.iterations.push(`\n ИТЕРАЦИЯ ${iter + 1}`);
+
             this.iterations.push(`Вводим в базис: ${enteringVar}`);
             this.iterations.push(`Проверка условий дополнительной нежесткости:`);
             
             // Проверяем, можно ли вводить переменную
             if (!this.simplex.canEnterBasis(enteringVar)) {
+
                 this.iterations.push(`   ${enteringVar} нельзя вводить из-за условий доп. нежесткости!`);
+
                 // Ищем другую переменную
                 // В реальном алгоритме нужно выбирать другую
                 this.iterations.push(`  Пропускаем эту переменную...`);
@@ -780,7 +794,9 @@ class QuadraticProgrammingSolver {
                 this.simplex.F[pivotCol] = -1e6;
                 continue;
             } else {
+
                 this.iterations.push(`   ${enteringVar} можно вводить в базис`);
+
             }
             
             // Вычисляем отношения
@@ -806,7 +822,9 @@ class QuadraticProgrammingSolver {
         let solution = this.simplex.extractSolution();
         let Fvalue = this.simplex.F[0];
         
+
         this.iterations.push(`\n Финальное значение F(z) = ${Fvalue.toFixed(4)}`);
+
         
         // Проверяем, все ли искусственные переменные выведены
         let artificialInBasis = [];
@@ -820,10 +838,12 @@ class QuadraticProgrammingSolver {
         }
         
         if (artificialInBasis.length === 0) {
+
             this.iterations.push("\n Все искусственные переменные выведены из базиса.");
             this.minFz = 0;
         } else {
             this.iterations.push(`\n Искусственные переменные в базисе: ${artificialInBasis.join(', ')}`);
+
             this.minFz = Fvalue;
         }
         
@@ -1316,14 +1336,16 @@ function updateQPResults(result) {
 }
 
 // Визуализация задачи КП (остаётся без изменений)
+
 // Улучшенная визуализация задачи КП
+
 function visualizeQP(x1Opt = null, x2Opt = null) {
     const q11 = parseFloat(document.getElementById('q11').value) || 0;
     const q12 = parseFloat(document.getElementById('q12').value) || 0;
     const q22 = parseFloat(document.getElementById('q22').value) || 0;
     const c1 = parseFloat(document.getElementById('c1').value) || 0;
     const c2 = parseFloat(document.getElementById('c2').value) || 0;
-    
+
     // Расширенный диапазон для лучшей визуализации
     const xMin = -2;
     const xMax = 4;
@@ -1332,10 +1354,10 @@ function visualizeQP(x1Opt = null, x2Opt = null) {
     const points = 100; // Увеличиваем количество точек для гладкости
     
     // Создаем сетку для контурного графика
+
     const x = [];
     const y = [];
     const z = [];
-    
     const xStep = (xMax - xMin) / points;
     const yStep = (yMax - yMin) / points;
     
@@ -1346,25 +1368,28 @@ function visualizeQP(x1Opt = null, x2Opt = null) {
         for (let j = 0; j <= points; j++) {
             const yj = yMin + j * yStep;
             if (i === 0) y.push(yj);
-            // Вычисляем значение целевой функции
+
             const val = q11*xi*xi + q12*xi*yj + q22*yj*yj + c1*xi + c2*yj;
             row.push(val);
         }
         z.push(row);
     }
     
+
     // Собираем линии ограничений
     const constraintLines = [];
     const constraintRows = document.querySelectorAll('.constraint-row');
     const colors = ['red', 'blue', 'green', 'purple', 'orange'];
     
     constraintRows.forEach((row, index) => {
+
         const inputs = row.querySelectorAll('input');
         if (inputs.length >= 3) {
             const a1 = parseFloat(inputs[0].value) || 0;
             const a2 = parseFloat(inputs[1].value) || 0;
             const b = parseFloat(inputs[2].value) || 0;
             
+
             // Создаем линию ограничения a1*x₁ + a2*x₂ = b
             const xLine = [];
             const yLine = [];
@@ -1409,6 +1434,7 @@ function visualizeQP(x1Opt = null, x2Opt = null) {
     ];
     
     // Формируем данные для графика
+
     const data = [
         {
             type: 'contour',
@@ -1418,6 +1444,7 @@ function visualizeQP(x1Opt = null, x2Opt = null) {
             colorscale: 'Viridis',
             contours: {
                 coloring: 'fill',
+
                 showlabels: true,
                 labelfont: {
                     size: 10,
@@ -1433,11 +1460,12 @@ function visualizeQP(x1Opt = null, x2Opt = null) {
             ncontours: 20,
             line: {
                 smoothing: 0.8
+
             }
         }
     ];
     
-    // Добавляем линии ограничений
+
     constraintLines.forEach(line => {
         data.push({
             type: 'scatter',
@@ -1487,21 +1515,25 @@ function visualizeQP(x1Opt = null, x2Opt = null) {
     });
     
     // Добавляем оптимальную точку
+
     if (x1Opt !== null && x2Opt !== null) {
         data.push({
             type: 'scatter',
             x: [x1Opt],
             y: [x2Opt],
+
             mode: 'markers+text',
             marker: {
                 color: 'yellow',
                 size: 15,
+
                 symbol: 'star',
                 line: {
                     color: 'black',
                     width: 2
                 }
             },
+
             text: ['Opt'],
             textposition: 'top center',
             textfont: {
@@ -1509,10 +1541,12 @@ function visualizeQP(x1Opt = null, x2Opt = null) {
                 color: 'black',
                 weight: 'bold'
             },
+
             name: 'Оптимум'
         });
     }
     
+
     const layout = {
         title: {
             text: 'Контурный график целевой функции и допустимая область',
@@ -1573,6 +1607,7 @@ function visualizeQP(x1Opt = null, x2Opt = null) {
     };
     
     Plotly.newPlot('qp-plot', data, layout, config);
+
 }
 
 // Обработчики событий
@@ -1621,4 +1656,6 @@ document.addEventListener('DOMContentLoaded', function() {
     });
     
     visualizeQP();
+
 });
+
