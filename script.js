@@ -2104,19 +2104,34 @@ async function startGA() {
         }
         
         // График популяции
+        // График популяции
 const validPoints = data.population.filter(p => !isNaN(p.x) && !isNaN(p.y) && !isNaN(gaSolver.rosenbrock(p.x, p.y)));
 const xVals = validPoints.map(p => p.x);
 const yVals = validPoints.map(p => p.y);
 const zVals = validPoints.map(p => gaSolver.rosenbrock(p.x, p.y));
 
-// ОТЛАДКА: проверяем значения
-console.log(`Поколение ${data.generation}:`);
-console.log(`  Популяция: ${validPoints.length} точек`);
-console.log(`  Первые 3 точки:`, validPoints.slice(0, 3));
-console.log(`  Лучшая точка: x=${data.bestIndividual.x}, y=${data.bestIndividual.y}, f=${data.bestFitness}`);
-
 if (populationPlotCreated) {
-    // Обновляем график - ПЕРЕСОЗДАЕМ ВЕСЬ ГРАФИК, чтобы избежать проблем с индексами
+    // Обновляем точки популяции (индекс 1) - ВАЖНО: индекс 1, а не 2!
+    Plotly.update('ga-population-plot', 
+        { 
+            x: [xVals], 
+            y: [yVals], 
+            z: [zVals] 
+        }, 
+        {}, 
+        [1]  // <-- индекс 1 - это слой популяции (синие точки)
+    );
+    
+    // Обновляем лучшую точку (индекс 2)
+    if (data.bestIndividual && !isNaN(data.bestIndividual.x)) {
+        Plotly.update('ga-population-plot', {
+            x: [[data.bestIndividual.x]],
+            y: [[data.bestIndividual.y]],
+            z: [[data.bestFitness]]
+        }, {}, [2]);  // <-- индекс 2 - это лучшая точка
+    }
+} else {
+    // Создаем новый график
     const xRange = gaSolver.xRange;
     const yRange = gaSolver.yRange;
     const points = 50;
@@ -2136,9 +2151,9 @@ if (populationPlotCreated) {
         zGrid.push(row);
     }
     
-    // Пересоздаем график полностью (проще, чем обновлять отдельные слои)
-    Plotly.react('ga-population-plot', [
-        {   // поверхность
+    // Создаем график с правильными индексами
+    Plotly.newPlot('ga-population-plot', [
+        {   // индекс 0: поверхность
             type: 'surface', 
             x: xGrid, 
             y: yGrid, 
@@ -2148,16 +2163,16 @@ if (populationPlotCreated) {
             showscale: true,
             name: 'Функция Розенброка'
         },
-        {   // популяция - СИНИЕ ТОЧКИ
+        {   // индекс 1: популяция (синие точки)
             type: 'scatter3d', 
             x: xVals, 
             y: yVals, 
             z: zVals, 
             mode: 'markers', 
-            marker: { color: 'blue', size: 5, opacity: 0.8 }, 
+            marker: { color: 'blue', size: 4, opacity: 0.8 }, 
             name: 'Популяция' 
         },
-        {   // лучшее решение - КРАСНАЯ ЗВЕЗДА
+        {   // индекс 2: лучшее решение (красная звезда)
             type: 'scatter3d', 
             x: [data.bestIndividual.x], 
             y: [data.bestIndividual.y], 
@@ -2166,7 +2181,7 @@ if (populationPlotCreated) {
             marker: { color: 'red', size: 15, symbol: 'star' }, 
             name: 'Лучшее решение' 
         },
-        {   // истинный минимум - ЗЕЛЕНАЯ ТОЧКА
+        {   // индекс 3: истинный минимум (зеленая точка)
             type: 'scatter3d', 
             x: [1], 
             y: [1], 
@@ -2182,44 +2197,8 @@ if (populationPlotCreated) {
             yaxis: { title: 'y', range: gaSolver.yRange }, 
             zaxis: { 
                 title: 'f(x,y)',
-                range: [0, 10]  // Важно: ограничиваем до 10, чтобы видеть дно!
+                autorange: true  // Ограничиваем до 10, чтобы видеть дно
             } 
-        },
-        autosize: true,
-        margin: { l: 0, r: 0, t: 50, b: 0 }
-    });
-} else {
-    // Создаем новый график (код такой же, как выше)
-    const xRange = gaSolver.xRange;
-    const yRange = gaSolver.yRange;
-    const points = 50;
-    const xGrid = [], yGrid = [], zGrid = [];
-    const xStep = (xRange[1] - xRange[0]) / points;
-    const yStep = (yRange[1] - yRange[0]) / points;
-    
-    for (let i = 0; i <= points; i++) {
-        const xi = xRange[0] + i * xStep;
-        xGrid.push(xi);
-        const row = [];
-        for (let j = 0; j <= points; j++) {
-            const yj = yRange[0] + j * yStep;
-            if (i === 0) yGrid.push(yj);
-            row.push(gaSolver.rosenbrock(xi, yj));
-        }
-        zGrid.push(row);
-    }
-    
-    Plotly.newPlot('ga-population-plot', [
-        { type: 'surface', x: xGrid, y: yGrid, z: zGrid, colorscale: 'Viridis', opacity: 0.6, showscale: true, name: 'Функция Розенброка' },
-        { type: 'scatter3d', x: xVals, y: yVals, z: zVals, mode: 'markers', marker: { color: 'blue', size: 5, opacity: 0.8 }, name: 'Популяция' },
-        { type: 'scatter3d', x: [data.bestIndividual.x], y: [data.bestIndividual.y], z: [data.bestFitness], mode: 'markers', marker: { color: 'red', size: 15, symbol: 'star' }, name: 'Лучшее решение' },
-        { type: 'scatter3d', x: [1], y: [1], z: [0], mode: 'markers', marker: { color: 'green', size: 10, symbol: 'circle' }, name: 'Истинный минимум (1,1)' }
-    ], { 
-        title: `Популяция (поколение ${data.generation})`, 
-        scene: { 
-            xaxis: { title: 'x', range: gaSolver.xRange }, 
-            yaxis: { title: 'y', range: gaSolver.yRange }, 
-            zaxis: { title: 'f(x,y)', range: [0, 10] } 
         },
         autosize: true,
         margin: { l: 0, r: 0, t: 50, b: 0 }
