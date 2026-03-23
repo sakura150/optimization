@@ -1659,3 +1659,637 @@ document.addEventListener('DOMContentLoaded', function() {
 
 });
 
+// ========== ЛАБОРАТОРНАЯ РАБОТА №3: ГЕНЕТИЧЕСКИЙ АЛГОРИТМ ==========
+
+class GeneticAlgorithm {
+    constructor() {
+        this.reset();
+    }
+
+    reset() {
+        this.populationSize = 200;
+        this.generations = 300;
+        this.crossoverProbability = 0.9;
+        this.mutationProbability = 0.1;  // Увеличил для лучшего исследования
+        this.eliteCount = 2;
+        this.tournamentSize = 3;
+        
+        this.xRange = [-2, 2];
+        this.yRange = [-1, 3];
+        
+        this.population = [];
+        this.fitness = [];
+        this.bestIndividual = null;
+        this.bestFitness = Infinity;
+        this.history = [];
+        this.currentGeneration = 0;
+        this.isRunning = false;
+        
+        // Функция Розенброка
+         this.rosenbrock = (x, y) => {
+        // Защита от некорректных значений
+        if (isNaN(x) || isNaN(y)) return Infinity;
+        const result = 100 * Math.pow(y - x * x, 2) + Math.pow(1 - x, 2);
+        // Защита от отрицательных значений (из-за погрешностей вычислений)
+        return Math.max(0, result);
+    };
+    }
+
+    initPopulation() {
+        this.population = [];
+        for (let i = 0; i < this.populationSize; i++) {
+            const x = this.xRange[0] + Math.random() * (this.xRange[1] - this.xRange[0]);
+            const y = this.yRange[0] + Math.random() * (this.yRange[1] - this.yRange[0]);
+            this.population.push({ x: x, y: y });
+        }
+        this.evaluatePopulation();
+    }
+
+    evaluatePopulation() {
+        this.fitness = [];
+        for (let i = 0; i < this.population.length; i++) {
+            const ind = this.population[i];
+            
+            // Проверка на NaN
+            if (isNaN(ind.x) || isNaN(ind.y)) {
+                this.fitness.push(Infinity);
+                continue;
+            }
+            
+            const f = this.rosenbrock(ind.x, ind.y);
+            
+            // Защита от некорректных значений
+            if (isNaN(f) || f < 0) {
+                this.fitness.push(Infinity);
+            } else {
+                this.fitness.push(f);
+            }
+            
+            // Обновляем лучшее решение
+            if (this.fitness[i] < this.bestFitness) {
+                this.bestFitness = this.fitness[i];
+                this.bestIndividual = { x: ind.x, y: ind.y };
+            }
+        }
+    }
+
+    tournamentSelection() {
+        let bestIdx = -1;
+        let bestFitness = Infinity;
+        
+        for (let i = 0; i < this.tournamentSize; i++) {
+            const idx = Math.floor(Math.random() * this.populationSize);
+            if (this.fitness[idx] < bestFitness) {
+                bestFitness = this.fitness[idx];
+                bestIdx = idx;
+            }
+        }
+        
+        if (bestIdx === -1) {
+            // Если не нашли, берем случайного
+            bestIdx = Math.floor(Math.random() * this.populationSize);
+        }
+        
+        return { x: this.population[bestIdx].x, y: this.population[bestIdx].y };
+    }
+
+    crossover(parent1, parent2) {
+        if (Math.random() < this.crossoverProbability) {
+            // Простая арифметическая рекомбинация (более стабильная)
+            const alpha = Math.random();
+            
+            const child1 = {
+                x: alpha * parent1.x + (1 - alpha) * parent2.x,
+                y: alpha * parent1.y + (1 - alpha) * parent2.y
+            };
+            
+            const child2 = {
+                x: (1 - alpha) * parent1.x + alpha * parent2.x,
+                y: (1 - alpha) * parent1.y + alpha * parent2.y
+            };
+            
+            // Ограничиваем значения в допустимых пределах
+            child1.x = Math.max(this.xRange[0], Math.min(this.xRange[1], child1.x));
+            child1.y = Math.max(this.yRange[0], Math.min(this.yRange[1], child1.y));
+            child2.x = Math.max(this.xRange[0], Math.min(this.xRange[1], child2.x));
+            child2.y = Math.max(this.yRange[0], Math.min(this.yRange[1], child2.y));
+            
+            return [child1, child2];
+        } else {
+            return [
+                { x: parent1.x, y: parent1.y },
+                { x: parent2.x, y: parent2.y }
+            ];
+        }
+    }
+
+    mutate(individual, generation) {
+        const newInd = { x: individual.x, y: individual.y };
+        const t = generation / Math.max(1, this.generations);
+        
+        // Уменьшаем амплитуду мутации со временем
+        const mutationStrength = 0.2 * (1 - t);
+        
+        // Мутация x
+        if (Math.random() < this.mutationProbability) {
+            const range = (this.xRange[1] - this.xRange[0]) * mutationStrength;
+            newInd.x += (Math.random() - 0.5) * range;
+            newInd.x = Math.max(this.xRange[0], Math.min(this.xRange[1], newInd.x));
+        }
+        
+        // Мутация y
+        if (Math.random() < this.mutationProbability) {
+            const range = (this.yRange[1] - this.yRange[0]) * mutationStrength;
+            newInd.y += (Math.random() - 0.5) * range;
+            newInd.y = Math.max(this.yRange[0], Math.min(this.yRange[1], newInd.y));
+        }
+        
+        return newInd;
+    }
+
+    createNewGeneration() {
+        const newPopulation = [];
+        
+        // Элитизм: сохраняем лучших
+        const indexed = [];
+        for (let i = 0; i < this.population.length; i++) {
+            indexed.push({ ind: this.population[i], fit: this.fitness[i], idx: i });
+        }
+        indexed.sort((a, b) => a.fit - b.fit);
+        
+        for (let i = 0; i < this.eliteCount; i++) {
+            newPopulation.push({ x: indexed[i].ind.x, y: indexed[i].ind.y });
+        }
+        
+        // Создаем остальных
+        while (newPopulation.length < this.populationSize) {
+            const parent1 = this.tournamentSelection();
+            const parent2 = this.tournamentSelection();
+            
+            let [child1, child2] = this.crossover(parent1, parent2);
+            
+            child1 = this.mutate(child1, this.currentGeneration);
+            child2 = this.mutate(child2, this.currentGeneration);
+            
+            newPopulation.push(child1);
+            if (newPopulation.length < this.populationSize) {
+                newPopulation.push(child2);
+            }
+        }
+        
+        this.population = newPopulation;
+        this.currentGeneration++;
+        this.evaluatePopulation();
+    }
+
+    async solve(onIteration, delay = 0) {
+        this.reset();
+        this.initPopulation();
+        
+        this.isRunning = true;
+        
+        for (let gen = 0; gen < this.generations && this.isRunning; gen++) {
+            this.createNewGeneration();
+            
+            if (onIteration) {
+                onIteration({
+                    generation: this.currentGeneration,
+                    bestFitness: this.bestFitness,
+                    bestIndividual: this.bestIndividual,
+                    population: this.population,
+                    fitness: this.fitness
+                });
+            }
+            
+            if (delay > 0) {
+                await new Promise(resolve => setTimeout(resolve, delay));
+            }
+        }
+        
+        return {
+            solution: this.bestIndividual,
+            fitness: this.bestFitness,
+            history: this.history
+        };
+    }
+
+    stop() {
+        this.isRunning = false;
+    }
+}
+
+// Глобальные переменные
+let gaSolver = null;
+let gaRunning = false;
+
+// Инициализация третьей лабораторной
+function initLab3() {
+    const tabsContainer = document.querySelector('.tabs');
+    if (!tabsContainer) return;
+    if (document.getElementById('lab3')) return;
+    
+    const lab3Button = document.createElement('button');
+    lab3Button.className = 'tab-button';
+    lab3Button.textContent = 'Лабораторная работа №3: Генетический алгоритм';
+    lab3Button.onclick = (e) => openTab(e, 'lab3');
+    tabsContainer.appendChild(lab3Button);
+    
+    const lab3Content = document.createElement('div');
+    lab3Content.id = 'lab3';
+    lab3Content.className = 'tab-content';
+    lab3Content.innerHTML = `
+        <div class="lab3-container">
+            <div class="lab3-params">
+                <div class="param-section">
+                    <h3>Параметры генетического алгоритма</h3>
+                    <div class="param-row">
+                        <label>Размер популяции:</label>
+                        <input type="number" id="ga-population-size" value="50" min="10" max="500" step="10">
+                    </div>
+                    <div class="param-row">
+                        <label>Количество поколений:</label>
+                        <input type="number" id="ga-generations" value="100" min="10" max="1000">
+                    </div>
+                    <div class="param-row">
+                        <label>Вероятность кроссинговера:</label>
+                        <input type="number" id="ga-crossover-prob" value="0.8" min="0" max="1" step="0.05">
+                    </div>
+                    <div class="param-row">
+                        <label>Вероятность мутации:</label>
+                        <input type="number" id="ga-mutation-prob" value="0.05" min="0" max="0.5" step="0.005">
+                    </div>
+                    <div class="param-row">
+                        <label>Размер турнира:</label>
+                        <input type="number" id="ga-tournament-size" value="3" min="2" max="20">
+                    </div>
+                    <div class="param-row">
+                        <label>Элитные особи:</label>
+                        <input type="number" id="ga-elite-count" value="2" min="0" max="20">
+                    </div>
+                    <div class="param-row">
+                        <label>Задержка (мс):</label>
+                        <input type="number" id="ga-delay" value="100" min="0" max="1000" step="50">
+                    </div>
+                </div>
+                <div class="param-section">
+                    <h3>Область поиска</h3>
+                    <div class="param-row">
+                        <label>X min:</label>
+                        <input type="number" id="ga-x-min" value="-2" step="0.5">
+                    </div>
+                    <div class="param-row">
+                        <label>X max:</label>
+                        <input type="number" id="ga-x-max" value="2" step="0.5">
+                    </div>
+                    <div class="param-row">
+                        <label>Y min:</label>
+                        <input type="number" id="ga-y-min" value="-1" step="0.5">
+                    </div>
+                    <div class="param-row">
+                        <label>Y max:</label>
+                        <input type="number" id="ga-y-max" value="3" step="0.5">
+                    </div>
+                </div>
+                <div class="param-section">
+                    <h3>Функция Розенброка</h3>
+                    <div class="function-display">
+                        f(x,y) = 100·(y - x²)² + (1 - x)²
+                    </div>
+                    <div class="info-text">
+                        Глобальный минимум: f(1, 1) = 0
+                    </div>
+                </div>
+                <div class="lab3-button-group">
+                    <button id="ga-start-btn" class="lab3-btn primary">Запустить ГА</button>
+                    <button id="ga-stop-btn" class="lab3-btn secondary" disabled>Остановить</button>
+                    <button id="ga-reset-btn" class="lab3-btn secondary">Сбросить</button>
+                </div>
+            </div>
+            <div class="lab3-results">
+                <div class="result-section">
+                    <h3>Текущее лучшее решение</h3>
+                    <div id="ga-best-solution" class="best-solution">
+                        <div>x* = <span id="ga-best-x">—</span></div>
+                        <div>y* = <span id="ga-best-y">—</span></div>
+                        <div>f(x*,y*) = <span id="ga-best-f">—</span></div>
+                    </div>
+                </div>
+                <div class="result-section">
+                    <h3>График сходимости</h3>
+                    <div id="ga-convergence-plot" style="height: 280px;"></div>
+                </div>
+                <div class="result-section">
+                    <h3>Популяция</h3>
+                    <div id="ga-population-plot" style="height: 280px;"></div>
+                </div>
+                <div class="result-section">
+                    <h3>Журнал</h3>
+                    <div id="ga-log" class="ga-log"></div>
+                </div>
+            </div>
+        </div>
+    `;
+    
+    document.querySelector('.container').appendChild(lab3Content);
+    
+    // Стили
+    const lab3Styles = document.createElement('style');
+    lab3Styles.textContent = `
+        .lab3-container { display: flex; gap: 20px; height: calc(100vh - 200px); min-height: 500px; }
+        .lab3-params { flex: 1; display: flex; flex-direction: column; gap: 15px; overflow-y: auto; padding-right: 10px; }
+        .lab3-results { flex: 3; display: flex; flex-direction: column; gap: 15px; overflow-y: auto; }
+        .param-section { background-color: #f8f9fa; border: 1px solid #ddd; border-radius: 8px; padding: 12px; }
+        .param-section h3 { margin: 0 0 10px 0; font-size: 0.95rem; color: #2c3e50; }
+        .param-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
+        .param-row label { font-size: 0.85rem; color: #34495e; }
+        .param-row input { width: 100px; padding: 4px 6px; border: 1px solid #bdc3c7; border-radius: 4px; }
+        .function-display { background-color: #ecf0f1; padding: 10px; border-radius: 6px; font-family: monospace; text-align: center; margin-bottom: 10px; }
+        .info-text { font-size: 0.8rem; color: #7f8c8d; text-align: center; }
+        .lab3-button-group { display: flex; gap: 10px; margin-top: 10px; }
+        .lab3-btn { flex: 1; padding: 8px; border: none; border-radius: 4px; cursor: pointer; font-weight: bold; }
+        .lab3-btn.primary { background-color: #3498db; color: white; }
+        .lab3-btn.primary:hover { background-color: #2980b9; }
+        .lab3-btn.secondary { background-color: #95a5a6; color: white; }
+        .lab3-btn.secondary:hover { background-color: #7f8c8d; }
+        .lab3-btn:disabled { opacity: 0.6; cursor: not-allowed; }
+        .best-solution { background-color: #2ecc71; color: white; padding: 12px; border-radius: 8px; display: flex; justify-content: space-around; font-weight: bold; }
+        .best-solution span { font-size: 1.1rem; }
+        .ga-log { background-color: #1e1e1e; color: #d4d4d4; font-family: monospace; font-size: 0.7rem; height: 150px; overflow-y: auto; padding: 8px; border-radius: 6px; }
+        .ga-log-entry { padding: 2px 0; border-bottom: 1px solid #333; }
+        @media (max-width: 768px) { .lab3-container { flex-direction: column; } }
+    `;
+    document.head.appendChild(lab3Styles);
+    
+    // Обработчики
+    const startBtn = document.getElementById('ga-start-btn');
+    const stopBtn = document.getElementById('ga-stop-btn');
+    const resetBtn = document.getElementById('ga-reset-btn');
+    
+    if (startBtn) startBtn.onclick = () => startGA();
+    if (stopBtn) stopBtn.onclick = () => stopGA();
+    if (resetBtn) resetBtn.onclick = () => resetGA();
+    
+    // Инициализация графиков
+    Plotly.newPlot('ga-convergence-plot', [{
+        x: [], y: [], type: 'scatter', mode: 'lines+markers'
+    }], { title: 'Сходимость', xaxis: { title: 'Поколение' }, yaxis: { title: 'f(x,y)' } });
+    
+    Plotly.newPlot('ga-population-plot', [{
+        type: 'scatter3d', x: [], y: [], z: [], mode: 'markers'
+    }], { title: 'Популяция', scene: { xaxis: { title: 'x' }, yaxis: { title: 'y' }, zaxis: { title: 'f' } } });
+}
+
+async function startGA() {
+    if (gaRunning) return;
+    
+    gaSolver = new GeneticAlgorithm();
+    
+    gaSolver.populationSize = parseInt(document.getElementById('ga-population-size').value) || 50;
+    gaSolver.generations = parseInt(document.getElementById('ga-generations').value) || 100;
+    gaSolver.crossoverProbability = parseFloat(document.getElementById('ga-crossover-prob').value) || 0.8;
+    gaSolver.mutationProbability = parseFloat(document.getElementById('ga-mutation-prob').value) || 0.05;
+    gaSolver.tournamentSize = parseInt(document.getElementById('ga-tournament-size').value) || 3;
+    gaSolver.eliteCount = parseInt(document.getElementById('ga-elite-count').value) || 2;
+    gaSolver.xRange = [
+        parseFloat(document.getElementById('ga-x-min').value) || -2,
+        parseFloat(document.getElementById('ga-x-max').value) || 2
+    ];
+    gaSolver.yRange = [
+        parseFloat(document.getElementById('ga-y-min').value) || -1,
+        parseFloat(document.getElementById('ga-y-max').value) || 3
+    ];
+    const delay = parseInt(document.getElementById('ga-delay').value) || 100;
+    
+    document.getElementById('ga-start-btn').disabled = true;
+    document.getElementById('ga-stop-btn').disabled = false;
+    document.getElementById('ga-reset-btn').disabled = true;
+    
+    const logDiv = document.getElementById('ga-log');
+    logDiv.innerHTML = '';
+    
+    const generations = [];
+    const fitnessHistory = [];
+    let convergencePlotCreated = false;
+    let populationPlotCreated = false;
+    
+    const onIteration = (data) => {
+        // Обновляем лучшее решение
+        if (data.bestIndividual && !isNaN(data.bestIndividual.x) && !isNaN(data.bestIndividual.y)) {
+            document.getElementById('ga-best-x').textContent = data.bestIndividual.x.toFixed(6);
+            document.getElementById('ga-best-y').textContent = data.bestIndividual.y.toFixed(6);
+            document.getElementById('ga-best-f').textContent = data.bestFitness.toFixed(10);
+        }
+        
+        generations.push(data.generation);
+        fitnessHistory.push(data.bestFitness);
+        
+        // График сходимости
+        if (convergencePlotCreated) {
+            Plotly.update('ga-convergence-plot', 
+                { x: [generations], y: [fitnessHistory] },
+                { autosize: true }  // Добавьте это
+            );
+        } else {
+            Plotly.newPlot('ga-convergence-plot', [{
+                x: generations, y: fitnessHistory, type: 'scatter', mode: 'lines+markers',
+                line: { color: '#e74c3c', width: 2 }, marker: { size: 3 }
+            }], { 
+                title: 'Сходимость генетического алгоритма', 
+                xaxis: { title: 'Поколение' }, 
+                yaxis: { title: 'f(x,y)' },
+                autosize: true,
+                margin: { l: 50, r: 20, t: 50, b: 40 }
+            });
+            convergencePlotCreated = true;
+        }
+        
+        // График популяции
+const validPoints = data.population.filter(p => !isNaN(p.x) && !isNaN(p.y) && !isNaN(gaSolver.rosenbrock(p.x, p.y)));
+const xVals = validPoints.map(p => p.x);
+const yVals = validPoints.map(p => p.y);
+const zVals = validPoints.map(p => gaSolver.rosenbrock(p.x, p.y));
+
+// ОТЛАДКА: проверяем значения
+console.log(`Поколение ${data.generation}:`);
+console.log(`  Популяция: ${validPoints.length} точек`);
+console.log(`  Первые 3 точки:`, validPoints.slice(0, 3));
+console.log(`  Лучшая точка: x=${data.bestIndividual.x}, y=${data.bestIndividual.y}, f=${data.bestFitness}`);
+
+if (populationPlotCreated) {
+    // Обновляем график - ПЕРЕСОЗДАЕМ ВЕСЬ ГРАФИК, чтобы избежать проблем с индексами
+    const xRange = gaSolver.xRange;
+    const yRange = gaSolver.yRange;
+    const points = 50;
+    const xGrid = [], yGrid = [], zGrid = [];
+    const xStep = (xRange[1] - xRange[0]) / points;
+    const yStep = (yRange[1] - yRange[0]) / points;
+    
+    for (let i = 0; i <= points; i++) {
+        const xi = xRange[0] + i * xStep;
+        xGrid.push(xi);
+        const row = [];
+        for (let j = 0; j <= points; j++) {
+            const yj = yRange[0] + j * yStep;
+            if (i === 0) yGrid.push(yj);
+            row.push(gaSolver.rosenbrock(xi, yj));
+        }
+        zGrid.push(row);
+    }
+    
+    // Пересоздаем график полностью (проще, чем обновлять отдельные слои)
+    Plotly.react('ga-population-plot', [
+        {   // поверхность
+            type: 'surface', 
+            x: xGrid, 
+            y: yGrid, 
+            z: zGrid, 
+            colorscale: 'Viridis', 
+            opacity: 0.6, 
+            showscale: true,
+            name: 'Функция Розенброка'
+        },
+        {   // популяция - СИНИЕ ТОЧКИ
+            type: 'scatter3d', 
+            x: xVals, 
+            y: yVals, 
+            z: zVals, 
+            mode: 'markers', 
+            marker: { color: 'blue', size: 5, opacity: 0.8 }, 
+            name: 'Популяция' 
+        },
+        {   // лучшее решение - КРАСНАЯ ЗВЕЗДА
+            type: 'scatter3d', 
+            x: [data.bestIndividual.x], 
+            y: [data.bestIndividual.y], 
+            z: [data.bestFitness], 
+            mode: 'markers', 
+            marker: { color: 'red', size: 15, symbol: 'star' }, 
+            name: 'Лучшее решение' 
+        },
+        {   // истинный минимум - ЗЕЛЕНАЯ ТОЧКА
+            type: 'scatter3d', 
+            x: [1], 
+            y: [1], 
+            z: [0], 
+            mode: 'markers', 
+            marker: { color: 'green', size: 10, symbol: 'circle' }, 
+            name: 'Истинный минимум (1,1)' 
+        }
+    ], { 
+        title: `Популяция (поколение ${data.generation})`, 
+        scene: { 
+            xaxis: { title: 'x', range: gaSolver.xRange }, 
+            yaxis: { title: 'y', range: gaSolver.yRange }, 
+            zaxis: { 
+                title: 'f(x,y)',
+                range: [0, 10]  // Важно: ограничиваем до 10, чтобы видеть дно!
+            } 
+        },
+        autosize: true,
+        margin: { l: 0, r: 0, t: 50, b: 0 }
+    });
+} else {
+    // Создаем новый график (код такой же, как выше)
+    const xRange = gaSolver.xRange;
+    const yRange = gaSolver.yRange;
+    const points = 50;
+    const xGrid = [], yGrid = [], zGrid = [];
+    const xStep = (xRange[1] - xRange[0]) / points;
+    const yStep = (yRange[1] - yRange[0]) / points;
+    
+    for (let i = 0; i <= points; i++) {
+        const xi = xRange[0] + i * xStep;
+        xGrid.push(xi);
+        const row = [];
+        for (let j = 0; j <= points; j++) {
+            const yj = yRange[0] + j * yStep;
+            if (i === 0) yGrid.push(yj);
+            row.push(gaSolver.rosenbrock(xi, yj));
+        }
+        zGrid.push(row);
+    }
+    
+    Plotly.newPlot('ga-population-plot', [
+        { type: 'surface', x: xGrid, y: yGrid, z: zGrid, colorscale: 'Viridis', opacity: 0.6, showscale: true, name: 'Функция Розенброка' },
+        { type: 'scatter3d', x: xVals, y: yVals, z: zVals, mode: 'markers', marker: { color: 'blue', size: 5, opacity: 0.8 }, name: 'Популяция' },
+        { type: 'scatter3d', x: [data.bestIndividual.x], y: [data.bestIndividual.y], z: [data.bestFitness], mode: 'markers', marker: { color: 'red', size: 15, symbol: 'star' }, name: 'Лучшее решение' },
+        { type: 'scatter3d', x: [1], y: [1], z: [0], mode: 'markers', marker: { color: 'green', size: 10, symbol: 'circle' }, name: 'Истинный минимум (1,1)' }
+    ], { 
+        title: `Популяция (поколение ${data.generation})`, 
+        scene: { 
+            xaxis: { title: 'x', range: gaSolver.xRange }, 
+            yaxis: { title: 'y', range: gaSolver.yRange }, 
+            zaxis: { title: 'f(x,y)', range: [0, 10] } 
+        },
+        autosize: true,
+        margin: { l: 0, r: 0, t: 50, b: 0 }
+    });
+    populationPlotCreated = true;
+}
+        
+        // Журнал
+        const entry = document.createElement('div');
+        entry.className = 'ga-log-entry';
+        entry.textContent = `Поколение ${data.generation}: x=${data.bestIndividual.x.toFixed(6)}, y=${data.bestIndividual.y.toFixed(6)}, f=${data.bestFitness.toFixed(10)}`;
+        logDiv.appendChild(entry);
+        logDiv.scrollTop = logDiv.scrollHeight;
+    };
+    
+    gaRunning = true;
+    const result = await gaSolver.solve(onIteration, delay);
+    gaRunning = false;
+    
+    document.getElementById('ga-start-btn').disabled = false;
+    document.getElementById('ga-stop-btn').disabled = true;
+    document.getElementById('ga-reset-btn').disabled = false;
+}
+
+function stopGA() {
+    if (gaSolver) gaSolver.stop();
+    gaRunning = false;
+    document.getElementById('ga-start-btn').disabled = false;
+    document.getElementById('ga-stop-btn').disabled = true;
+    document.getElementById('ga-reset-btn').disabled = false;
+}
+
+function resetGA() {
+    if (gaRunning) stopGA();
+    
+    document.getElementById('ga-best-x').textContent = '—';
+    document.getElementById('ga-best-y').textContent = '—';
+    document.getElementById('ga-best-f').textContent = '—';
+    document.getElementById('ga-log').innerHTML = '';
+    
+    Plotly.purge('ga-convergence-plot');
+    Plotly.purge('ga-population-plot');
+    
+   Plotly.newPlot('ga-convergence-plot', [{
+        x: [], y: [], type: 'scatter', mode: 'lines+markers'
+    }], { 
+        title: 'Сходимость', 
+        xaxis: { title: 'Поколение' }, 
+        yaxis: { title: 'f(x,y)' },
+        autosize: true,  // Добавьте это
+        margin: { l: 50, r: 20, t: 50, b: 40 } // Уменьшите отступы
+    });
+
+    Plotly.newPlot('ga-population-plot', [{
+        type: 'scatter3d', x: [], y: [], z: [], mode: 'markers'
+    }], { 
+        title: 'Популяция', 
+        scene: { 
+            xaxis: { title: 'x' }, 
+            yaxis: { title: 'y' }, 
+            zaxis: { title: 'f' } 
+        },
+        autosize: true,  // Добавьте это
+        margin: { l: 0, r: 0, t: 50, b: 0 } // Уменьшите отступы
+    });
+}
+
+// Запуск инициализации
+if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', initLab3);
+} else {
+    initLab3();
+}

@@ -114,7 +114,7 @@
         /* Средняя панель с графиком и результатами */
         .middle-panel {
             display: flex;
-            gap: 8px;
+            gap:px;
             flex: 1;
             min-height: 0;
             margin-bottom: 8px;
@@ -122,19 +122,20 @@
         
         /* Левая часть - график */
         .visualization-panel {
-            flex: 2;
+            flex: 3;
             background-color: white;
             border: 1px solid #ddd;
             border-radius: 6px;
             padding: 8px;
             display: flex;
             flex-direction: column;
+            min-height: 600px;
         }
         
         #plot {
             width: 100%;
             flex: 1;
-            min-height: 0;
+            min-height: 550px;
         }
         
         .current-point-info {
@@ -571,4 +572,14 @@
     .lab2-container {
         flex-direction: column;
     }
+}
+
+/* Увеличение всех графиков */
+#plot, #qp-plot, #ga-convergence-plot, #ga-population-plot {
+    min-height: 550px !important;
+    height: 550px !important;
+}
+
+.lab3-results .result-section {
+    margin-bottom: 15px;
 }
