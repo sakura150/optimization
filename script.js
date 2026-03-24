@@ -1659,7 +1659,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
 });
 
-// ========== ЛАБОРАТОРНАЯ РАБОТА №3: ГЕНЕТИЧЕСКИЙ АЛГОРИТМ ==========
+// 333333
 
 class GeneticAlgorithm {
     constructor() {
@@ -1845,11 +1845,9 @@ class GeneticAlgorithm {
     }
 }
 
-// Глобальные переменные
 let gaSolver = null;
 let gaRunning = false;
 
-// Функция создания 3D поверхности для функции Розенброка
 function createGASurface(xRange, yRange, points = 50) {
     const x = [];
     const y = [];
@@ -1875,7 +1873,6 @@ function createGASurface(xRange, yRange, points = 50) {
     return { x, y, z };
 }
 
-// Запуск ГА
 async function startGA() {
     console.log("startGA called");
     
@@ -1884,7 +1881,6 @@ async function startGA() {
         return;
     }
     
-    // Получаем параметры
     const populationSize = parseInt(document.getElementById('ga-population-size').value) || 50;
     const generations = parseInt(document.getElementById('ga-generations').value) || 100;
     const crossoverProb = parseFloat(document.getElementById('ga-crossover-prob').value) || 0.8;
@@ -1926,7 +1922,6 @@ async function startGA() {
     const onIteration = (data) => {
         console.log("Iteration:", data.generation, "Best fitness:", data.bestFitness);
         
-        // Обновляем лучшее решение
         if (data.bestIndividual && !isNaN(data.bestIndividual.x) && !isNaN(data.bestIndividual.y)) {
             document.getElementById('ga-best-x').textContent = data.bestIndividual.x.toFixed(6);
             document.getElementById('ga-best-y').textContent = data.bestIndividual.y.toFixed(6);
@@ -1936,7 +1931,6 @@ async function startGA() {
         generationsArr.push(data.generation);
         fitnessHistory.push(data.bestFitness);
         
-        // График сходимости
         if (convergencePlotCreated) {
             Plotly.update('ga-convergence-plot', {
                 x: [generationsArr],
@@ -1958,7 +1952,6 @@ async function startGA() {
             convergencePlotCreated = true;
         }
         
-        // 3D визуализация популяции
         if (!surfaceData) {
             surfaceData = createGASurface(gaSolver.xRange, gaSolver.yRange, 50);
         }
@@ -1973,14 +1966,12 @@ async function startGA() {
         });
         
         if (populationPlotCreated) {
-            // Обновляем точки популяции
             Plotly.update('ga-population-plot', {
                 x: [xVals],
                 y: [yVals],
                 z: [zVals]
             }, {}, [1]);
             
-            // Обновляем лучшую точку
             if (data.bestIndividual && !isNaN(data.bestIndividual.x)) {
                 let bestZ = gaSolver.rosenbrock(data.bestIndividual.x, data.bestIndividual.y);
                 if (isNaN(bestZ) || bestZ > 100) bestZ = 100;
@@ -1991,7 +1982,6 @@ async function startGA() {
                 }, {}, [2]);
             }
         } else {
-            // Поверхность
             const surfaceTrace = {
                 type: 'surface',
                 x: surfaceData.x,
@@ -2004,7 +1994,6 @@ async function startGA() {
                 name: 'Функция Розенброка'
             };
             
-            // Популяция
             const populationTrace = {
                 type: 'scatter3d',
                 x: xVals,
@@ -2015,7 +2004,6 @@ async function startGA() {
                 name: 'Популяция'
             };
             
-            // Лучшее решение
             let bestZ = gaSolver.rosenbrock(data.bestIndividual.x, data.bestIndividual.y);
             if (isNaN(bestZ) || bestZ > 100) bestZ = 100;
             const bestTrace = {
@@ -2028,7 +2016,6 @@ async function startGA() {
                 name: 'Лучшее решение'
             };
             
-            // Истинный минимум
             const trueMinTrace = {
                 type: 'scatter3d',
                 x: [1],
@@ -2051,7 +2038,6 @@ async function startGA() {
             populationPlotCreated = true;
         }
         
-        // Журнал
         const entry = document.createElement('div');
         entry.className = 'ga-log-entry';
         entry.textContent = `Поколение ${data.generation}: x=${data.bestIndividual.x.toFixed(6)}, y=${data.bestIndividual.y.toFixed(6)}, f=${data.bestFitness.toFixed(10)}`;
@@ -2130,9 +2116,6 @@ function resetGA() {
     });
 }
 
-// Инициализация третьей лабораторной
-// Инициализация третьей лабораторной
-// Инициализация третьей лабораторной
 function initLab3() {
     console.log("initLab3 called");
     
@@ -2142,10 +2125,8 @@ function initLab3() {
         return;
     }
     
-    // Проверяем, существует ли уже lab3
     if (document.getElementById('lab3')) {
         console.log("lab3 already exists, reattaching handlers");
-        // Просто перепривязываем обработчики
         const startBtn = document.getElementById('ga-start-btn');
         const stopBtn = document.getElementById('ga-stop-btn');
         const resetBtn = document.getElementById('ga-reset-btn');
@@ -2156,14 +2137,12 @@ function initLab3() {
         return;
     }
     
-    // Добавляем кнопку вкладки
     const lab3Button = document.createElement('button');
     lab3Button.className = 'tab-button';
     lab3Button.textContent = 'Лабораторная работа №3: Генетический алгоритм';
     lab3Button.onclick = (e) => openTab(e, 'lab3');
     tabsContainer.appendChild(lab3Button);
     
-    // Создаем контент
     const lab3Content = document.createElement('div');
     lab3Content.id = 'lab3';
     lab3Content.className = 'tab-content';
@@ -2262,7 +2241,6 @@ function initLab3() {
     
     document.querySelector('.container').appendChild(lab3Content);
     
-    // Добавляем стили если их нет
     if (!document.querySelector('#lab3-styles')) {
         const lab3Styles = document.createElement('style');
         lab3Styles.id = 'lab3-styles';
@@ -2293,7 +2271,6 @@ function initLab3() {
         document.head.appendChild(lab3Styles);
     }
     
-    // Инициализация графиков
     const xRange = [-2, 2];
     const yRange = [-1, 3];
     const surfaceData = createGASurface(xRange, yRange, 40);
@@ -2323,7 +2300,6 @@ function initLab3() {
         }
     });
     
-    // Привязываем обработчики
     const startBtn = document.getElementById('ga-start-btn');
     const stopBtn = document.getElementById('ga-stop-btn');
     const resetBtn = document.getElementById('ga-reset-btn');
@@ -2339,7 +2315,6 @@ function initLab3() {
     if (resetBtn) resetBtn.onclick = () => resetGA();
 }
 
-// Запуск инициализации всех лабораторных
 document.addEventListener('DOMContentLoaded', function() {
     console.log("DOM fully loaded");
     initLab3();
@@ -2347,9 +2322,8 @@ document.addEventListener('DOMContentLoaded', function() {
 });
 
 
-// ========== ЛАБОРАТОРНАЯ РАБОТА №4: АЛГОРИТМ РОЯ ЧАСТИЦ (PSO) - 3D ВЕРСИЯ ==========
+// 444444444444
 
-// Тестовые функции
 const psoFunctions = {
     sphere: {
         name: 'Сфера',
@@ -2508,17 +2482,14 @@ class ParticleSwarmOptimizer3D {
     }
 }
 
-// Глобальные переменные для PSO
 let psoSolver = null;
 let psoRunning = false;
 
-// Функция обновления информации о функции
 function updatePSOFunctionInfo() {
     const funcName = document.getElementById('pso-function-select').value;
     const funcInfo = psoFunctions[funcName];
     document.getElementById('pso-func-info').innerHTML = funcInfo.info;
     
-    // Обновляем диапазоны в зависимости от выбранной функции
     const range = funcInfo.range;
     document.getElementById('pso-x-min').value = range[0];
     document.getElementById('pso-x-max').value = range[1];
@@ -2528,7 +2499,6 @@ function updatePSOFunctionInfo() {
     const xRange = [range[0], range[1]];
     const yRange = [range[0], range[1]];
     
-    // Создаем новую поверхность для предварительного просмотра
     const surfaceData = createPSOSurface3D(funcInfo.f, xRange, yRange, 40);
     
     const surfaceTrace = {
@@ -2556,7 +2526,6 @@ function updatePSOFunctionInfo() {
     });
 }
 
-// Функция создания 3D поверхности
 function createPSOSurface3D(func, xRange, yRange, points = 50) {
     const x = [];
     const y = [];
@@ -2573,7 +2542,6 @@ function createPSOSurface3D(func, xRange, yRange, points = 50) {
             const yj = yRange[0] + j * yStep;
             if (i === 0) y.push(yj);
             let val = func(xi, yj);
-            // Ограничиваем значение для лучшей визуализации
             if (isNaN(val) || val > 100) val = 100;
             row.push(val);
         }
@@ -2583,11 +2551,9 @@ function createPSOSurface3D(func, xRange, yRange, points = 50) {
     return { x, y, z };
 }
 
-// Запуск PSO
 async function startPSO() {
     if (psoRunning) return;
     
-    // Получаем выбранную функцию
     const funcName = document.getElementById('pso-function-select').value;
     const funcInfo = psoFunctions[funcName];
     const xRange = [
@@ -2599,7 +2565,6 @@ async function startPSO() {
         parseFloat(document.getElementById('pso-y-max').value) || funcInfo.range[1]
     ];
     
-    // Создаем оптимизатор с выбранной функцией
     psoSolver = new ParticleSwarmOptimizer3D(funcInfo.f, xRange, yRange);
     
     psoSolver.swarmSize = parseInt(document.getElementById('pso-swarm-size').value) || 50;
@@ -2634,7 +2599,6 @@ async function startPSO() {
         iterations.push(data.iteration);
         values.push(data.bestValue);
         
-        // График сходимости
         if (convergencePlotCreated) {
             Plotly.update('pso-convergence-plot', 
                 { x: [iterations], y: [values] },
@@ -2652,7 +2616,6 @@ async function startPSO() {
             convergencePlotCreated = true;
         }
         
-        // 3D визуализация роя
         if (!surfaceData) {
             surfaceData = createPSOSurface3D(psoSolver.func, psoSolver.xRange, psoSolver.yRange, 50);
         }
@@ -2666,12 +2629,10 @@ async function startPSO() {
         });
         
         if (swarmPlotCreated) {
-            // Обновляем точки частиц
             Plotly.update('pso-swarm-plot', 
                 { x: [particleX], y: [particleY], z: [particleZ] },
                 {}, [1]
             );
-            // Обновляем лучшую точку
             if (data.bestPosition) {
                 let bestZ = psoSolver.func(data.bestPosition.x, data.bestPosition.y);
                 if (isNaN(bestZ) || bestZ > 100) bestZ = 100;
@@ -2681,7 +2642,6 @@ async function startPSO() {
                 );
             }
         } else {
-            // Поверхность
             const surfaceTrace = {
                 type: 'surface',
                 x: surfaceData.x,
@@ -2694,7 +2654,6 @@ async function startPSO() {
                 name: 'Целевая функция'
             };
             
-            // Частицы
             const swarmTrace = {
                 type: 'scatter3d',
                 x: particleX,
@@ -2705,7 +2664,6 @@ async function startPSO() {
                 name: 'Частицы'
             };
             
-            // Лучшее решение
             let bestZ = psoSolver.func(data.bestPosition.x, data.bestPosition.y);
             if (isNaN(bestZ) || bestZ > 100) bestZ = 100;
             const bestTrace = {
@@ -2718,7 +2676,6 @@ async function startPSO() {
                 name: 'Лучшее решение'
             };
             
-            // Истинный минимум
             const globalMin = psoFunctions[funcName].globalMin;
             let minZ = psoSolver.func(globalMin[0], globalMin[1]);
             if (isNaN(minZ) || minZ > 100) minZ = 100;
@@ -2746,7 +2703,6 @@ async function startPSO() {
             swarmPlotCreated = true;
         }
         
-        // Журнал (каждые 5 итераций или последняя)
         if (data.iteration - lastIteration >= 5 || data.iteration === psoSolver.iterations) {
             lastIteration = data.iteration;
             const entry = document.createElement('div');
@@ -2788,11 +2744,9 @@ function resetPSO() {
         x: [], y: [], type: 'scatter', mode: 'lines+markers'
     }], { title: 'Сходимость PSO', xaxis: { title: 'Итерация' }, yaxis: { title: 'f(x,y)' } });
     
-    // Обновляем информацию о функции (это также перерисует поверхность)
     updatePSOFunctionInfo();
 }
 
-// Инициализация PSO
 function initPSO() {
     const startBtn = document.getElementById('pso-start-btn');
     const stopBtn = document.getElementById('pso-stop-btn');
@@ -2804,28 +2758,22 @@ function initPSO() {
     if (resetBtn) resetBtn.onclick = () => resetPSO();
     if (funcSelect) funcSelect.onchange = () => updatePSOFunctionInfo();
     
-    // Инициализация графика сходимости
     Plotly.newPlot('pso-convergence-plot', [{
         x: [], y: [], type: 'scatter', mode: 'lines+markers'
     }], { title: 'Сходимость PSO', xaxis: { title: 'Итерация' }, yaxis: { title: 'f(x,y)' } });
     
-    // Инициализация 3D графика с текущей функцией
     updatePSOFunctionInfo();
 }
 
-// Запуск инициализации всех лабораторных - ТОЛЬКО ОДИН РАЗ!
 document.addEventListener('DOMContentLoaded', function() {
     console.log("DOM fully loaded - initializing all labs");
     
-    // Проверяем, не инициализированы ли уже лабораторные
     if (!window.labsInitialized) {
         window.labsInitialized = true;
         
-        // Инициализируем 3-ю лабораторную, только если её нет
         if (!document.getElementById('lab3')) {
             initLab3();
         } else {
-            // Если уже есть, просто привязываем обработчики
             const startBtn = document.getElementById('ga-start-btn');
             const stopBtn = document.getElementById('ga-stop-btn');
             const resetBtn = document.getElementById('ga-reset-btn');
@@ -2840,7 +2788,6 @@ document.addEventListener('DOMContentLoaded', function() {
             if (resetBtn) resetBtn.onclick = () => resetGA();
         }
         
-        // Инициализируем 4-ю лабораторную
         initPSO();
     }
 });
