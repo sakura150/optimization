@@ -1610,55 +1610,6 @@ function visualizeQP(x1Opt = null, x2Opt = null) {
 
 }
 
-// Обработчики событий
-document.addEventListener('DOMContentLoaded', function() {
-    document.getElementById('solve-qp-btn').addEventListener('click', function() {
-        const result = qpSolver.solve();
-        updateQPResults(result);
-    });
-    
-    document.getElementById('reset-qp-btn').addEventListener('click', function() {
-        qpSolver.reset();
-        document.getElementById('lagrange-function').innerHTML = '';
-        document.getElementById('kkt-conditions').innerHTML = '';
-        document.getElementById('extended-system').innerHTML = '';
-        document.getElementById('simplex-iterations').innerHTML = '';
-        document.getElementById('auxiliary-problem').innerHTML = '';
-        document.getElementById('sol-x1').textContent = '—';
-        document.getElementById('sol-x2').textContent = '—';
-        document.getElementById('sol-f').textContent = '—';
-        document.getElementById('sol-lambda').innerHTML = '—';
-        document.getElementById('qp-status').textContent = '';
-        document.getElementById('qp-status').className = 'qp-status';
-        visualizeQP();
-    });
-    
-    document.getElementById('example-qp-btn').addEventListener('click', function() {
-        document.getElementById('q11').value = 2;
-        document.getElementById('q12').value = 2;
-        document.getElementById('q22').value = 2;
-        document.getElementById('c1').value = -4;
-        document.getElementById('c2').value = -6;
-        
-        const container = document.getElementById('constraints-container');
-        container.innerHTML = '';
-        const newRow = document.createElement('div');
-        newRow.className = 'constraint-row';
-        newRow.innerHTML = `
-            <input type="number" id="a11" value="1" step="0.1"> x₁ + 
-            <input type="number" id="a12" value="2" step="0.1"> x₂ ≤ 
-            <input type="number" id="b1" value="2" step="0.1">
-            <button class="remove-constraint" onclick="removeConstraint(this)" style="display:none;">✕</button>
-        `;
-        container.appendChild(newRow);
-        
-        visualizeQP();
-    });
-    
-    visualizeQP();
-
-});
-
 // 333333
 
 class GeneticAlgorithm {
@@ -2315,13 +2266,6 @@ function initLab3() {
     if (resetBtn) resetBtn.onclick = () => resetGA();
 }
 
-document.addEventListener('DOMContentLoaded', function() {
-    console.log("DOM fully loaded");
-    initLab3();
-    initPSO();
-});
-
-
 // 444444444444
 
 const psoFunctions = {
@@ -2765,29 +2709,1239 @@ function initPSO() {
     updatePSOFunctionInfo();
 }
 
+// ========== ЛАБОРАТОРНАЯ РАБОТА №5: ПЧЕЛИНЫЙ АЛГОРИТМ (Bees Algorithm) ==========
+
+const baFunctions = {
+    rosenbrock: {
+        name: 'Розенброка',
+        f: (x, y) => 100 * Math.pow(y - x * x, 2) + Math.pow(1 - x, 2),
+        globalMin: [1, 1],
+        globalVal: 0,
+        info: 'f(x,y) = 100·(y - x²)² + (1 - x)²<br>Глобальный минимум: f(1, 1) = 0',
+        range: [-2, 2]
+    },
+    himmelblau: {
+        name: 'Химмельблау',
+        f: (x, y) => Math.pow(x * x + y - 11, 2) + Math.pow(x + y * y - 7, 2),
+        globalMin: [3.0, 2.0],
+        globalVal: 0,
+        info: 'f(x,y) = (x² + y - 11)² + (x + y² - 7)²<br>Глобальный минимум: f(3, 2) = 0',
+        range: [-10, 10]
+    },
+    rastrigin: {
+        name: 'Растригина',
+        f: (x, y) => 20 + x * x + y * y - 10 * (Math.cos(2 * Math.PI * x) + Math.cos(2 * Math.PI * y)),
+        globalMin: [0, 0],
+        globalVal: 0,
+        info: 'f(x,y) = 20 + x² + y² - 10·(cos(2πx) + cos(2πy))<br>Глобальный минимум: f(0, 0) = 0',
+        range: [-2, 2]
+    }
+};
+
+class BeesAlgorithm {
+    constructor(func, bounds) {
+        this.func = func;
+        this.bounds = bounds;
+
+        this.numScouts = 16;
+        this.numEliteSites = 2;
+        this.numPerspSites = 3;
+        this.numEliteBees = 7;
+        this.numPerspBees = 4;
+        this.radius = 0.2;
+        this.maxIter = 500;
+        this.stagnationLimit = 20;
+
+        this.scouts = [];
+        this.bestSolution = null;
+        this.bestFitness = Infinity;
+        this.history = [];
+        this.stagnationCounter = 0;
+        this.isRunning = false;
+    }
+
+    clamp(value, min, max) {
+        return Math.max(min, Math.min(max, value));
+    }
+
+    initScouts() {
+        this.scouts = [];
+        for (let i = 0; i < this.numScouts; i++) {
+            const scout = {
+                x: this.bounds.x[0] + Math.random() * (this.bounds.x[1] - this.bounds.x[0]),
+                y: this.bounds.y[0] + Math.random() * (this.bounds.y[1] - this.bounds.y[0])
+            };
+            scout.fitness = this.func(scout.x, scout.y);
+            this.scouts.push(scout);
+
+            if (scout.fitness < this.bestFitness) {
+                this.bestFitness = scout.fitness;
+                this.bestSolution = { x: scout.x, y: scout.y };
+                this.stagnationCounter = 0;
+            }
+        }
+    }
+
+    localSearch(center, numBees) {
+        let bestLocalFitness = Infinity;
+        let bestLocalPos = { x: center.x, y: center.y };
+
+        for (let i = 0; i < numBees; i++) {
+            const angle = Math.random() * 2 * Math.PI;
+            const dist = Math.random() * this.radius;
+            const newX = this.clamp(center.x + dist * Math.cos(angle), this.bounds.x[0], this.bounds.x[1]);
+            const newY = this.clamp(center.y + dist * Math.sin(angle), this.bounds.y[0], this.bounds.y[1]);
+            const newFitness = this.func(newX, newY);
+
+            if (newFitness < bestLocalFitness) {
+                bestLocalFitness = newFitness;
+                bestLocalPos = { x: newX, y: newY };
+            }
+        }
+        return { position: bestLocalPos, fitness: bestLocalFitness };
+    }
+
+    iterate() {
+        this.scouts.sort((a, b) => a.fitness - b.fitness);
+
+        const eliteSites = this.scouts.slice(0, this.numEliteSites);
+        const perspSites = this.scouts.slice(this.numEliteSites, this.numEliteSites + this.numPerspSites);
+
+        let improved = false;
+        const newScouts = [];
+
+        for (const site of eliteSites) {
+            const result = this.localSearch(site, this.numEliteBees);
+            newScouts.push(result.position);
+            if (result.fitness < this.bestFitness) {
+                this.bestFitness = result.fitness;
+                this.bestSolution = { ...result.position };
+                improved = true;
+            }
+        }
+
+        for (const site of perspSites) {
+            const result = this.localSearch(site, this.numPerspBees);
+            newScouts.push(result.position);
+            if (result.fitness < this.bestFitness) {
+                this.bestFitness = result.fitness;
+                this.bestSolution = { ...result.position };
+                improved = true;
+            }
+        }
+
+        const remainingScouts = this.numScouts - newScouts.length;
+        for (let i = 0; i < remainingScouts; i++) {
+            const scout = {
+                x: this.bounds.x[0] + Math.random() * (this.bounds.x[1] - this.bounds.x[0]),
+                y: this.bounds.y[0] + Math.random() * (this.bounds.y[1] - this.bounds.y[0])
+            };
+            scout.fitness = this.func(scout.x, scout.y);
+            newScouts.push(scout);
+            
+            if (scout.fitness < this.bestFitness) {
+                this.bestFitness = scout.fitness;
+                this.bestSolution = { x: scout.x, y: scout.y };
+                improved = true;
+            }
+        }
+
+        this.scouts = newScouts.map(p => ({ ...p, fitness: this.func(p.x, p.y) }));
+
+        if (improved) {
+            this.stagnationCounter = 0;
+        } else {
+            this.stagnationCounter++;
+        }
+
+        this.history.push({
+            scouts: JSON.parse(JSON.stringify(this.scouts)),
+            bestFitness: this.bestFitness,
+            bestSolution: { ...this.bestSolution }
+        });
+    }
+
+    async solve(onIterationCallback, delay = 0) {
+        this.isRunning = true;
+        this.bestFitness = Infinity;
+        this.history = [];
+        this.stagnationCounter = 0;
+        this.initScouts();
+
+        if (onIterationCallback) {
+            onIterationCallback({
+                iteration: 0,
+                bestFitness: this.bestFitness,
+                bestSolution: this.bestSolution,
+                scouts: this.scouts
+            });
+        }
+
+        for (let iter = 1; iter <= this.maxIter && this.isRunning; iter++) {
+            this.iterate();
+
+            if (onIterationCallback) {
+                onIterationCallback({
+                    iteration: iter,
+                    bestFitness: this.bestFitness,
+                    bestSolution: this.bestSolution,
+                    scouts: this.scouts
+                });
+            }
+
+            if (this.stagnationCounter >= this.stagnationLimit) {
+                console.log(`Алгоритм остановлен: стагнация в течение ${this.stagnationLimit} итераций.`);
+                break;
+            }
+
+            if (delay > 0) {
+                await new Promise(resolve => setTimeout(resolve, delay));
+            }
+        }
+
+        this.isRunning = false;
+        return {
+            solution: this.bestSolution,
+            fitness: this.bestFitness,
+            history: this.history
+        };
+    }
+
+    stop() {
+        this.isRunning = false;
+    }
+}
+
+let baSolver = null;
+let baRunning = false;
+
+// Визуализация: ТОЧНО КАК В PYTHON-ПРИМЕРЕ
+function createBASurface(func, xRange, yRange, points = 100) {
+    const x = [];
+    const y = [];
+    const z = [];
+    const xStep = (xRange[1] - xRange[0]) / points;
+    const yStep = (yRange[1] - yRange[0]) / points;
+
+    for (let i = 0; i <= points; i++) {
+        const xi = xRange[0] + i * xStep;
+        x.push(xi);
+        const row = [];
+        for (let j = 0; j <= points; j++) {
+            const yj = yRange[0] + j * yStep;
+            if (i === 0) y.push(yj);
+            // Вычисляем настоящее значение функции, без обрезаний!
+            const val = func(xi, yj);
+            row.push(val);
+        }
+        z.push(row);
+    }
+    return { x, y, z };
+}
+
+function updateBAFunctionInfo() {
+    const funcName = document.getElementById('ba-function-select').value;
+    const funcInfo = baFunctions[funcName];
+    document.getElementById('ba-func-info').innerHTML = funcInfo.info;
+}
+
+async function startBA() {
+    if (baRunning) return;
+
+    const funcName = document.getElementById('ba-function-select').value;
+    const funcInfo = baFunctions[funcName];
+    const range = funcInfo.range;
+
+    const params = {
+        bounds: { x: [range[0], range[1]], y: [range[0], range[1]] },
+        numScouts: parseInt(document.getElementById('ba-scouts').value) || 16,
+        numEliteSites: parseInt(document.getElementById('ba-elite-sites').value) || 2,
+        numPerspSites: parseInt(document.getElementById('ba-persp-sites').value) || 3,
+        numEliteBees: parseInt(document.getElementById('ba-elite-bees').value) || 7,
+        numPerspBees: parseInt(document.getElementById('ba-persp-bees').value) || 4,
+        radius: parseFloat(document.getElementById('ba-radius').value) || 0.2,
+        maxIter: parseInt(document.getElementById('ba-max-iter').value) || 500,
+        stagnationLimit: parseInt(document.getElementById('ba-stagnation').value) || 20,
+        delay: 50
+    };
+
+    baSolver = new BeesAlgorithm(funcInfo.f, params.bounds);
+    Object.assign(baSolver, params);
+    
+    document.getElementById('ba-start-btn').disabled = true;
+    document.getElementById('ba-stop-btn').disabled = false;
+    document.getElementById('ba-reset-btn').disabled = true;
+    const logDiv = document.getElementById('ba-log');
+    logDiv.innerHTML = '';
+
+    // Создаем поверхность ТОЧНО как в Python
+    const surfaceData = createBASurface(funcInfo.f, params.bounds.x, params.bounds.y, 100);
+    
+    let convergencePlotCreated = false;
+    let swarmPlotCreated = false;
+    const convergenceX = [];
+    const convergenceY = [];
+    let lastLoggedIteration = -5;
+
+    const onIteration = (data) => {
+        if (data.bestSolution) {
+            document.getElementById('ba-best-x').textContent = data.bestSolution.x.toFixed(6);
+            document.getElementById('ba-best-y').textContent = data.bestSolution.y.toFixed(6);
+            document.getElementById('ba-best-f').textContent = data.bestFitness.toFixed(10);
+        }
+
+        // График сходимости
+        convergenceX.push(data.iteration);
+        convergenceY.push(data.bestFitness);
+        if (!convergencePlotCreated) {
+            Plotly.newPlot('ba-convergence-plot', [{
+                x: convergenceX, y: convergenceY, type: 'scatter', mode: 'lines+markers',
+                line: { color: '#e74c3c', width: 2 }, marker: { size: 4 }
+            }], {
+                title: 'Сходимость пчелиного алгоритма',
+                xaxis: { title: 'Итерация' },
+                yaxis: { title: 'f(x,y)' }
+            });
+            convergencePlotCreated = true;
+        } else {
+            Plotly.update('ba-convergence-plot', { x: [convergenceX], y: [convergenceY] });
+        }
+
+        // 3D-визуализация: ТОЧНО КАК В PYTHON
+        const scoutsX = data.scouts.map(p => p.x);
+        const scoutsY = data.scouts.map(p => p.y);
+        const scoutsZ = data.scouts.map(p => p.fitness);
+
+        const traces = [
+            // Поверхность функции (как в Python)
+            {
+                type: 'surface',
+                x: surfaceData.x,
+                y: surfaceData.y,
+                z: surfaceData.z,
+                colorscale: 'Viridis',
+                colorbar: { title: 'f(x,y)' },
+                name: 'Функция',
+                showscale: true
+            },
+            // Пчелы-разведчики
+            {
+                type: 'scatter3d',
+                x: scoutsX,
+                y: scoutsY,
+                z: scoutsZ,
+                mode: 'markers',
+                marker: {
+                    color: '#e74c3c',
+                    size: 4,
+                    symbol: 'circle',
+                    line: { color: 'white', width: 1 }
+                },
+                name: 'Пчелы-разведчики'
+            },
+            // Лучшее решение (текущее)
+            {
+                type: 'scatter3d',
+                x: [data.bestSolution.x],
+                y: [data.bestSolution.y],
+                z: [data.bestFitness],
+                mode: 'markers+text',
+                marker: {
+                    color: 'yellow',
+                    size: 8,
+                    symbol: 'diamond',
+                    line: { color: 'black', width: 1 }
+                },
+                text: ['Текущее'],
+                textposition: 'top center',
+                textfont: { size: 10, color: 'yellow' },
+                name: 'Лучшее решение'
+            },
+            // Истинный минимум
+            {
+                type: 'scatter3d',
+                x: [funcInfo.globalMin[0]],
+                y: [funcInfo.globalMin[1]],
+                z: [funcInfo.globalVal],
+                mode: 'markers+text',
+                marker: {
+                    color: '#2ecc71',
+                    size: 8,
+                    symbol: 'circle-open',
+                    line: { color: '#27ae60', width: 2 }
+                },
+                text: ['Истинный'],
+                textposition: 'top center',
+                textfont: { size: 10, color: '#2ecc71' },
+                name: 'Истинный минимум'
+            }
+        ];
+
+        const layout = {
+            title: {
+                text: `Итерация ${data.iteration} – ${funcInfo.name}`,
+                font: { size: 14 }
+            },
+            scene: {
+                xaxis: { title: 'X' },
+                yaxis: { title: 'Y' },
+                zaxis: { title: 'f(X, Y)' },
+                camera: { eye: { x: 1.5, y: 1.5, z: 0.8 } }
+            },
+            margin: { l: 0, r: 0, t: 40, b: 0 },
+            showlegend: true,
+            legend: { x: 0.8, y: 0.9 }
+        };
+
+        if (!swarmPlotCreated) {
+            Plotly.newPlot('ba-swarm-plot', traces, layout);
+            swarmPlotCreated = true;
+        } else {
+            Plotly.update('ba-swarm-plot', {
+                x: [null, scoutsX, [data.bestSolution.x], [funcInfo.globalMin[0]]],
+                y: [null, scoutsY, [data.bestSolution.y], [funcInfo.globalMin[1]]],
+                z: [null, scoutsZ, [data.bestFitness], [funcInfo.globalVal]]
+            }, {
+                'title': `Итерация ${data.iteration} – ${funcInfo.name}`
+            }, [1, 2, 3]);
+        }
+
+        // Журнал
+        if (data.iteration % 5 === 0 || data.iteration === 1 || data.iteration === baSolver.maxIter) {
+            const entry = document.createElement('div');
+            entry.className = 'ba-log-entry';
+            entry.textContent = `Ит. ${data.iteration}: f(${data.bestSolution.x.toFixed(4)}, ${data.bestSolution.y.toFixed(4)}) = ${data.bestFitness.toFixed(8)}`;
+            logDiv.appendChild(entry);
+            logDiv.scrollTop = logDiv.scrollHeight;
+        }
+    };
+
+    baRunning = true;
+    const result = await baSolver.solve(onIteration, params.delay);
+    baRunning = false;
+
+    document.getElementById('ba-start-btn').disabled = false;
+    document.getElementById('ba-stop-btn').disabled = true;
+    document.getElementById('ba-reset-btn').disabled = false;
+
+    // ===== ФИНАЛЬНАЯ ВИЗУАЛИЗАЦИЯ С ОСОБОЙ ТОЧКОЙ РЕЗУЛЬТАТА =====
+    const finalScoutsX = result.history[result.history.length - 1].scouts.map(p => p.x);
+    const finalScoutsY = result.history[result.history.length - 1].scouts.map(p => p.y);
+    const finalScoutsZ = result.history[result.history.length - 1].scouts.map(p => p.fitness);
+
+    const finalTraces = [
+        // Поверхность функции
+        {
+            type: 'surface',
+            x: surfaceData.x,
+            y: surfaceData.y,
+            z: surfaceData.z,
+            colorscale: 'Viridis',
+            colorbar: { title: 'f(x,y)' },
+            name: 'Функция',
+            showscale: true,
+            opacity: 0.8
+        },
+        // Пчелы-разведчики (финальные позиции)
+        {
+            type: 'scatter3d',
+            x: finalScoutsX,
+            y: finalScoutsY,
+            z: finalScoutsZ,
+            mode: 'markers',
+            marker: {
+                color: '#e74c3c',
+                size: 4,
+                symbol: 'circle',
+                line: { color: 'white', width: 1 },
+                opacity: 0.6
+            },
+            name: 'Пчелы-разведчики'
+        },
+        // Лучшее решение (последнее)
+        {
+            type: 'scatter3d',
+            x: [result.solution.x],
+            y: [result.solution.y],
+            z: [result.fitness],
+            mode: 'markers',
+            marker: {
+                color: 'yellow',
+                size: 10,
+                symbol: 'diamond',
+                line: { color: 'black', width: 2 }
+            },
+            name: 'Лучшее решение'
+        },
+        // Истинный минимум
+        {
+            type: 'scatter3d',
+            x: [funcInfo.globalMin[0]],
+            y: [funcInfo.globalMin[1]],
+            z: [funcInfo.globalVal],
+            mode: 'markers+text',
+            marker: {
+                color: '#2ecc71',
+                size: 8,
+                symbol: 'circle-open',
+                line: { color: '#27ae60', width: 2 }
+            },
+            text: ['Истинный'],
+            textposition: 'top center',
+            textfont: { size: 10, color: '#2ecc71' },
+            name: 'Истинный минимум'
+        }
+    ];
+
+    const finalLayout = {
+        title: {
+            text: `РЕЗУЛЬТАТ: ${funcInfo.name} <br>f(${result.solution.x.toFixed(6)}, ${result.solution.y.toFixed(6)}) = ${result.fitness.toFixed(10)}`,
+            font: { size: 14, color: '#2c3e50' }
+        },
+        scene: {
+            xaxis: { title: 'X' },
+            yaxis: { title: 'Y' },
+            zaxis: { title: 'f(X, Y)' },
+            camera: { eye: { x: 1.5, y: 1.5, z: 0.8 } }
+        },
+        margin: { l: 0, r: 0, t: 60, b: 0 },
+        showlegend: true,
+        legend: { x: 0.8, y: 0.9 }
+    };
+
+    Plotly.newPlot('ba-swarm-plot', finalTraces, finalLayout);
+
+    // Финальная запись в журнал
+    const finalEntry = document.createElement('div');
+    finalEntry.className = 'ba-log-entry';
+    finalEntry.style.color = '#2ecc71';
+    finalEntry.style.fontWeight = 'bold';
+    finalEntry.textContent = `ЗАВЕРШЕНО! Результат: f(${result.solution.x.toFixed(6)}, ${result.solution.y.toFixed(6)}) = ${result.fitness.toFixed(10)}`;
+    logDiv.appendChild(finalEntry);
+    logDiv.scrollTop = logDiv.scrollHeight;
+}
+
+function stopBA() {
+    if (baSolver) baSolver.stop();
+    baRunning = false;
+    document.getElementById('ba-start-btn').disabled = false;
+    document.getElementById('ba-stop-btn').disabled = true;
+    document.getElementById('ba-reset-btn').disabled = false;
+}
+
+function resetBA() {
+    if (baRunning) stopBA();
+    document.getElementById('ba-best-x').textContent = '---';
+    document.getElementById('ba-best-y').textContent = '---';
+    document.getElementById('ba-best-f').textContent = '---';
+    document.getElementById('ba-log').innerHTML = '';
+    Plotly.purge('ba-convergence-plot');
+    Plotly.purge('ba-swarm-plot');
+    
+    Plotly.newPlot('ba-convergence-plot', [{ x: [], y: [], type: 'scatter', mode: 'lines+markers' }], {
+        title: 'Сходимость', xaxis: { title: 'Итерация' }, yaxis: { title: 'f(x,y)' }
+    });
+    
+    const funcName = document.getElementById('ba-function-select').value;
+    const funcInfo = baFunctions[funcName];
+    const surfaceData = createBASurface(funcInfo.f, [funcInfo.range[0], funcInfo.range[1]], [funcInfo.range[0], funcInfo.range[1]], 100);
+    Plotly.newPlot('ba-swarm-plot', [{
+        type: 'surface', x: surfaceData.x, y: surfaceData.y, z: surfaceData.z,
+        colorscale: 'Viridis', colorbar: { title: 'f(x,y)' }
+    }], {
+        title: `Функция ${funcInfo.name}`,
+        scene: { xaxis: { title: 'X' }, yaxis: { title: 'Y' }, zaxis: { title: 'f(X, Y)' },
+            camera: { eye: { x: 1.5, y: 1.5, z: 0.8 } } }
+    });
+
+    updateBAFunctionInfo();
+}
+
+function initBA() {
+    const startBtn = document.getElementById('ba-start-btn');
+    const stopBtn = document.getElementById('ba-stop-btn');
+    const resetBtn = document.getElementById('ba-reset-btn');
+    const funcSelect = document.getElementById('ba-function-select');
+
+    if (startBtn) startBtn.onclick = () => startBA();
+    if (stopBtn) stopBtn.onclick = () => stopBA();
+    if (resetBtn) resetBtn.onclick = () => resetBA();
+    if (funcSelect) {
+        funcSelect.onchange = () => {
+            updateBAFunctionInfo();
+            resetBA();
+        };
+    }
+
+    resetBA();
+}
+
+// ========== ЛАБОРАТОРНАЯ РАБОТА №6: ИСКУССТВЕННАЯ ИММУННАЯ СЕТЬ ==========
+
+const aisFunctions = {
+    rosenbrock: {
+        name: 'Розенброка',
+        f: (x, y) => 100 * Math.pow(y - x * x, 2) + Math.pow(1 - x, 2),
+        globalMin: [1, 1],
+        globalVal: 0,
+        info: 'f(x,y) = 100·(y - x²)² + (1 - x)²<br>Глобальный минимум: f(1, 1) = 0',
+        range: [-2, 2]
+    },
+    himmelblau: {
+        name: 'Химмельблау',
+        f: (x, y) => Math.pow(x * x + y - 11, 2) + Math.pow(x + y * y - 7, 2),
+        globalMin: [3.0, 2.0],
+        globalVal: 0,
+        info: 'f(x,y) = (x² + y - 11)² + (x + y² - 7)²<br>Глобальный минимум: f(3, 2) = 0',
+        range: [-5, 5]
+    },
+    rastrigin: {
+        name: 'Растригина',
+        f: (x, y) => 20 + x * x + y * y - 10 * (Math.cos(2 * Math.PI * x) + Math.cos(2 * Math.PI * y)),
+        globalMin: [0, 0],
+        globalVal: 0,
+        info: 'f(x,y) = 20 + x² + y² - 10·(cos(2πx) + cos(2πy))<br>Глобальный минимум: f(0, 0) = 0',
+        range: [-5.12, 5.12]
+    }
+};
+
+class ArtificialImmuneSystem {
+    constructor(func, bounds) {
+        this.func = func;
+        this.bounds = bounds;
+        
+        // Параметры алгоритма
+        this.populationSize = 50;      // |S^b|
+        this.nb = 10;                  // n_b - лучших антител для клонирования
+        this.nc = 5;                   // n_c - клонов на антитело
+        this.nd = 5;                   // n_d - лучших клонов после мутации
+        this.mutationRate = 0.5;       // α - коэффициент мутации
+        this.selectionRate = 0.1;      // b_s - степень селекции
+        this.stimulationThreshold = 0.1; // b_b - порог стимуляции
+        this.suppressionThreshold = 0.2; // b_r - порог сжатия
+        this.renewalRate = 0.1;        // b_n - коэффициент обновления
+        this.maxIter = 200;
+        
+        // Состояние алгоритма
+        this.population = [];          // S^b - популяция антител
+        this.memoryCells = [];         // S^m - клетки памяти
+        this.bestSolution = null;
+        this.bestFitness = Infinity;
+        this.history = [];
+        this.isRunning = false;
+    }
+    
+    // Инициализация популяции антител
+    initPopulation() {
+        this.population = [];
+        for (let i = 0; i < this.populationSize; i++) {
+            const antibody = {
+                x: this.bounds.x[0] + Math.random() * (this.bounds.x[1] - this.bounds.x[0]),
+                y: this.bounds.y[0] + Math.random() * (this.bounds.y[1] - this.bounds.y[0])
+            };
+            antibody.fitness = this.func(antibody.x, antibody.y);
+            this.population.push(antibody);
+            
+            if (antibody.fitness < this.bestFitness) {
+                this.bestFitness = antibody.fitness;
+                this.bestSolution = { x: antibody.x, y: antibody.y };
+            }
+        }
+    }
+    
+    // Вычисление аффинности (обратная величина к значению функции)
+    calculateAffinity(fitness) {
+        // Аффинность = 1 / (1 + fitness), чтобы избежать деления на ноль
+        return 1.0 / (1.0 + fitness);
+    }
+    
+    // Клонирование и мутация отобранных антител
+    cloneAndMutate(selectedAntibodies) {
+        const clones = [];
+        
+        for (const antibody of selectedAntibodies) {
+            const affinity = this.calculateAffinity(antibody.fitness);
+            // Число клонов пропорционально аффинности
+            const numClones = Math.max(1, Math.floor(this.nc * affinity * 2));
+            
+            for (let i = 0; i < numClones; i++) {
+                // Мутация по формуле из методички
+                const alpha = this.mutationRate * (1.0 - affinity); // Адаптивная мутация
+                const dx = alpha * (Math.random() - 0.5);
+                const dy = alpha * (Math.random() - 0.5);
+                
+                const clone = {
+                    x: this.clamp(antibody.x + dx, this.bounds.x[0], this.bounds.x[1]),
+                    y: this.clamp(antibody.y + dy, this.bounds.y[0], this.bounds.y[1])
+                };
+                clone.fitness = this.func(clone.x, clone.y);
+                clones.push(clone);
+            }
+        }
+        
+        return clones;
+    }
+    
+    // Сжатие популяции (удаление похожих антител)
+    suppressPopulation(population, threshold) {
+        if (population.length <= 1) return population;
+        
+        const suppressed = [population[0]];
+        
+        for (let i = 1; i < population.length; i++) {
+            let isSimilar = false;
+            for (const existing of suppressed) {
+                const distance = Math.sqrt(
+                    Math.pow(population[i].x - existing.x, 2) + 
+                    Math.pow(population[i].y - existing.y, 2)
+                );
+                if (distance < threshold) {
+                    isSimilar = true;
+                    break;
+                }
+            }
+            if (!isSimilar) {
+                suppressed.push(population[i]);
+            }
+        }
+        
+        return suppressed;
+    }
+    
+    // Одна итерация алгоритма
+    iterate() {
+        // Шаг 1: Сортируем популяцию по фитнесу (возрастание)
+        this.population.sort((a, b) => a.fitness - b.fitness);
+        
+        // Шаг 2: Выбираем n_b лучших антител
+        const selectedAntibodies = this.population.slice(0, this.nb);
+        
+        // Шаг 3: Клонирование и мутация
+        let clones = this.cloneAndMutate(selectedAntibodies);
+        
+        // Шаг 4: Отбор n_d лучших клонов
+        clones.sort((a, b) => a.fitness - b.fitness);
+        const bestClones = clones.slice(0, this.nd);
+        
+        // Шаг 5: Сжатие клонов
+        const suppressedClones = this.suppressPopulation(bestClones, this.suppressionThreshold);
+        
+        // Шаг 6: Обновление клеток памяти
+        this.memoryCells = [...suppressedClones];
+        
+        // Удаляем клетки с низкой аффинностью (ниже порога стимуляции)
+        this.memoryCells = this.memoryCells.filter(cell => 
+            this.calculateAffinity(cell.fitness) > this.stimulationThreshold
+        );
+        
+        // Шаг 7: Объединяем популяцию с клетками памяти и сжимаем
+        this.population = [...this.population, ...this.memoryCells];
+        this.population.sort((a, b) => a.fitness - b.fitness);
+        
+        // Сохраняем лучшие решения
+        this.population = this.suppressPopulation(
+            this.population.slice(0, Math.floor(this.populationSize * 1.5)), 
+            this.suppressionThreshold / 2
+        );
+        
+        // Обрезаем до размера популяции
+        if (this.population.length > this.populationSize) {
+            this.population = this.population.slice(0, this.populationSize);
+        }
+        
+        // Шаг 8: Обновление популяции (замена худших новыми случайными)
+        const numToReplace = Math.floor(this.renewalRate * this.population.length);
+        this.population.sort((a, b) => b.fitness - a.fitness); // Сортируем по убыванию
+        
+        for (let i = 0; i < numToReplace; i++) {
+            this.population[i] = {
+                x: this.bounds.x[0] + Math.random() * (this.bounds.x[1] - this.bounds.x[0]),
+                y: this.bounds.y[0] + Math.random() * (this.bounds.y[1] - this.bounds.y[0])
+            };
+            this.population[i].fitness = this.func(this.population[i].x, this.population[i].y);
+        }
+        
+        // Шаг 9: Обновляем лучшее решение
+        for (const antibody of this.population) {
+            if (antibody.fitness < this.bestFitness) {
+                this.bestFitness = antibody.fitness;
+                this.bestSolution = { x: antibody.x, y: antibody.y };
+            }
+        }
+        
+        // Сохраняем историю
+        this.history.push({
+            population: JSON.parse(JSON.stringify(this.population)),
+            bestFitness: this.bestFitness,
+            bestSolution: { ...this.bestSolution },
+            memoryCells: JSON.parse(JSON.stringify(this.memoryCells))
+        });
+    }
+    
+    // Вспомогательная функция для ограничения значений
+    clamp(value, min, max) {
+        return Math.max(min, Math.min(max, value));
+    }
+    
+    // Основной метод решения
+    async solve(onIterationCallback, delay = 0) {
+        this.isRunning = true;
+        this.bestFitness = Infinity;
+        this.history = [];
+        this.memoryCells = [];
+        
+        this.initPopulation();
+        
+        if (onIterationCallback) {
+            onIterationCallback({
+                iteration: 0,
+                bestFitness: this.bestFitness,
+                bestSolution: this.bestSolution,
+                population: this.population,
+                memoryCells: this.memoryCells
+            });
+        }
+        
+        for (let iter = 1; iter <= this.maxIter && this.isRunning; iter++) {
+            this.iterate();
+            
+            if (onIterationCallback) {
+                onIterationCallback({
+                    iteration: iter,
+                    bestFitness: this.bestFitness,
+                    bestSolution: this.bestSolution,
+                    population: this.population,
+                    memoryCells: this.memoryCells
+                });
+            }
+            
+            if (delay > 0) {
+                await new Promise(resolve => setTimeout(resolve, delay));
+            }
+        }
+        
+        this.isRunning = false;
+        return {
+            solution: this.bestSolution,
+            fitness: this.bestFitness,
+            history: this.history
+        };
+    }
+    
+    // Остановка алгоритма
+    stop() {
+        this.isRunning = false;
+    }
+}
+
+// Глобальные переменные для 6-й лабораторной
+let aisSolver = null;
+let aisRunning = false;
+
+// Функция для создания поверхности (аналогично другим лабам)
+function createAISSurface(func, xRange, yRange, points = 80) {
+    const x = [];
+    const y = [];
+    const z = [];
+    const xStep = (xRange[1] - xRange[0]) / points;
+    const yStep = (yRange[1] - yRange[0]) / points;
+    
+    for (let i = 0; i <= points; i++) {
+        const xi = xRange[0] + i * xStep;
+        x.push(xi);
+        const row = [];
+        for (let j = 0; j <= points; j++) {
+            const yj = yRange[0] + j * yStep;
+            if (i === 0) y.push(yj);
+            const val = func(xi, yj);
+            row.push(val);
+        }
+        z.push(row);
+    }
+    return { x, y, z };
+}
+
+// Обновление информации о функции
+function updateAISFunctionInfo() {
+    const funcName = document.getElementById('ais-function-select').value;
+    const funcInfo = aisFunctions[funcName];
+    document.getElementById('ais-func-info').innerHTML = funcInfo.info;
+}
+
+// Запуск алгоритма
+async function startAIS() {
+    if (aisRunning) return;
+    
+    const funcName = document.getElementById('ais-function-select').value;
+    const funcInfo = aisFunctions[funcName];
+    const range = funcInfo.range;
+    
+    const bounds = { 
+        x: [range[0], range[1]], 
+        y: [range[0], range[1]] 
+    };
+    
+    aisSolver = new ArtificialImmuneSystem(funcInfo.f, bounds);
+    
+    // Загрузка параметров из формы
+    aisSolver.populationSize = parseInt(document.getElementById('ais-population-size').value) || 50;
+    aisSolver.nb = parseInt(document.getElementById('ais-nb').value) || 10;
+    aisSolver.nc = parseInt(document.getElementById('ais-nc').value) || 5;
+    aisSolver.nd = parseInt(document.getElementById('ais-nd').value) || 5;
+    aisSolver.mutationRate = parseFloat(document.getElementById('ais-mutation-rate').value) || 0.5;
+    aisSolver.selectionRate = parseFloat(document.getElementById('ais-selection-rate').value) || 0.1;
+    aisSolver.stimulationThreshold = parseFloat(document.getElementById('ais-stimulation-threshold').value) || 0.1;
+    aisSolver.suppressionThreshold = parseFloat(document.getElementById('ais-suppression-threshold').value) || 0.2;
+    aisSolver.renewalRate = parseFloat(document.getElementById('ais-renewal-rate').value) || 0.1;
+    aisSolver.maxIter = parseInt(document.getElementById('ais-max-iter').value) || 200;
+    
+    const delay = parseInt(document.getElementById('ais-delay').value) || 100;
+    
+    // Блокировка кнопок
+    document.getElementById('ais-start-btn').disabled = true;
+    document.getElementById('ais-stop-btn').disabled = false;
+    document.getElementById('ais-reset-btn').disabled = true;
+    
+    const logDiv = document.getElementById('ais-log');
+    logDiv.innerHTML = '';
+    
+    // Создание поверхности для визуализации
+    const surfaceData = createAISSurface(funcInfo.f, bounds.x, bounds.y, 80);
+    
+    let convergencePlotCreated = false;
+    let swarmPlotCreated = false;
+    const convergenceX = [];
+    const convergenceY = [];
+    
+    const onIteration = (data) => {
+        // Обновление лучшего решения
+        if (data.bestSolution) {
+            document.getElementById('ais-best-x').textContent = data.bestSolution.x.toFixed(6);
+            document.getElementById('ais-best-y').textContent = data.bestSolution.y.toFixed(6);
+            document.getElementById('ais-best-f').textContent = data.bestFitness.toFixed(10);
+        }
+        
+        // График сходимости
+        convergenceX.push(data.iteration);
+        convergenceY.push(data.bestFitness);
+        
+        if (!convergencePlotCreated) {
+            Plotly.newPlot('ais-convergence-plot', [{
+                x: convergenceX,
+                y: convergenceY,
+                type: 'scatter',
+                mode: 'lines+markers',
+                line: { color: '#e74c3c', width: 2 },
+                marker: { size: 4 }
+            }], {
+                title: 'Сходимость иммунной сети',
+                xaxis: { title: 'Итерация' },
+                yaxis: { title: 'f(x,y)' }
+            });
+            convergencePlotCreated = true;
+        } else {
+            Plotly.update('ais-convergence-plot', {
+                x: [convergenceX],
+                y: [convergenceY]
+            });
+        }
+        
+        // 3D визуализация
+        const popX = data.population.map(p => p.x);
+        const popY = data.population.map(p => p.y);
+        const popZ = data.population.map(p => p.fitness);
+        
+        const memoryX = data.memoryCells.map(p => p.x);
+        const memoryY = data.memoryCells.map(p => p.y);
+        const memoryZ = data.memoryCells.map(p => p.fitness);
+        
+        const traces = [
+            // Поверхность функции
+            {
+                type: 'surface',
+                x: surfaceData.x,
+                y: surfaceData.y,
+                z: surfaceData.z,
+                colorscale: 'Viridis',
+                colorbar: { title: 'f(x,y)' },
+                name: 'Функция',
+                showscale: true,
+                opacity: 0.8
+            },
+            // Антитела (популяция)
+            {
+                type: 'scatter3d',
+                x: popX,
+                y: popY,
+                z: popZ,
+                mode: 'markers',
+                marker: {
+                    color: '#3498db',
+                    size: 4,
+                    symbol: 'circle',
+                    line: { color: 'white', width: 1 }
+                },
+                name: 'Антитела (Sᵇ)'
+            },
+            // Клетки памяти
+            {
+                type: 'scatter3d',
+                x: memoryX,
+                y: memoryY,
+                z: memoryZ,
+                mode: 'markers',
+                marker: {
+                    color: '#e74c3c',
+                    size: 6,
+                    symbol: 'diamond',
+                    line: { color: 'white', width: 1 }
+                },
+                name: 'Клетки памяти (Sᵐ)'
+            },
+            // Лучшее решение
+            {
+                type: 'scatter3d',
+                x: [data.bestSolution.x],
+                y: [data.bestSolution.y],
+                z: [data.bestFitness],
+                mode: 'markers+text',
+                marker: {
+                    color: 'yellow',
+                    size: 10,
+                    symbol: 'star',
+                    line: { color: 'black', width: 2 }
+                },
+                text: ['Лучшее'],
+                textposition: 'top center',
+                textfont: { size: 10, color: 'yellow' },
+                name: 'Лучшее решение'
+            },
+            // Истинный минимум
+            {
+                type: 'scatter3d',
+                x: [funcInfo.globalMin[0]],
+                y: [funcInfo.globalMin[1]],
+                z: [funcInfo.globalVal],
+                mode: 'markers+text',
+                marker: {
+                    color: '#2ecc71',
+                    size: 8,
+                    symbol: 'circle-open',
+                    line: { color: '#27ae60', width: 2 }
+                },
+                text: ['Истинный'],
+                textposition: 'top center',
+                textfont: { size: 10, color: '#2ecc71' },
+                name: 'Истинный минимум'
+            }
+        ];
+        
+        const layout = {
+            title: {
+                text: `Итерация ${data.iteration} – ${funcInfo.name}`,
+                font: { size: 14 }
+            },
+            scene: {
+                xaxis: { title: 'X' },
+                yaxis: { title: 'Y' },
+                zaxis: { title: 'f(X, Y)' },
+                camera: { eye: { x: 1.5, y: 1.5, z: 0.8 } }
+            },
+            margin: { l: 0, r: 0, t: 40, b: 0 },
+            showlegend: true,
+            legend: { x: 0.8, y: 0.9 }
+        };
+        
+        if (!swarmPlotCreated) {
+            Plotly.newPlot('ais-swarm-plot', traces, layout);
+            swarmPlotCreated = true;
+        } else {
+            Plotly.update('ais-swarm-plot', {
+                x: [null, popX, memoryX, [data.bestSolution.x], [funcInfo.globalMin[0]]],
+                y: [null, popY, memoryY, [data.bestSolution.y], [funcInfo.globalMin[1]]],
+                z: [null, popZ, memoryZ, [data.bestFitness], [funcInfo.globalVal]]
+            }, {
+                'title': `Итерация ${data.iteration} – ${funcInfo.name}`
+            }, [1, 2, 3, 4]);
+        }
+        
+        // Журнал (каждые 5 итераций)
+        if (data.iteration % 5 === 0 || data.iteration === 1) {
+            const entry = document.createElement('div');
+            entry.className = 'ais-log-entry';
+            entry.textContent = `Ит. ${data.iteration}: f(${data.bestSolution.x.toFixed(4)}, ${data.bestSolution.y.toFixed(4)}) = ${data.bestFitness.toFixed(8)} | Популяция: ${data.population.length} | Память: ${data.memoryCells.length}`;
+            logDiv.appendChild(entry);
+            logDiv.scrollTop = logDiv.scrollHeight;
+        }
+    };
+    
+    aisRunning = true;
+    const result = await aisSolver.solve(onIteration, delay);
+    aisRunning = false;
+    
+    // Разблокировка кнопок
+    document.getElementById('ais-start-btn').disabled = false;
+    document.getElementById('ais-stop-btn').disabled = true;
+    document.getElementById('ais-reset-btn').disabled = false;
+    
+    // Финальная запись
+    const finalEntry = document.createElement('div');
+    finalEntry.className = 'ais-log-entry';
+    finalEntry.style.color = '#2ecc71';
+    finalEntry.style.fontWeight = 'bold';
+    finalEntry.textContent = `✓ ЗАВЕРШЕНО! f(${result.solution.x.toFixed(6)}, ${result.solution.y.toFixed(6)}) = ${result.fitness.toFixed(10)}`;
+    logDiv.appendChild(finalEntry);
+    logDiv.scrollTop = logDiv.scrollHeight;
+}
+
+// Остановка алгоритма
+function stopAIS() {
+    if (aisSolver) aisSolver.stop();
+    aisRunning = false;
+    document.getElementById('ais-start-btn').disabled = false;
+    document.getElementById('ais-stop-btn').disabled = true;
+    document.getElementById('ais-reset-btn').disabled = false;
+}
+
+// Сброс
+function resetAIS() {
+    if (aisRunning) stopAIS();
+    document.getElementById('ais-best-x').textContent = '—';
+    document.getElementById('ais-best-y').textContent = '—';
+    document.getElementById('ais-best-f').textContent = '—';
+    document.getElementById('ais-log').innerHTML = '';
+    
+    Plotly.purge('ais-convergence-plot');
+    Plotly.purge('ais-swarm-plot');
+    
+    Plotly.newPlot('ais-convergence-plot', [{
+        x: [], y: [], type: 'scatter', mode: 'lines+markers'
+    }], {
+        title: 'Сходимость',
+        xaxis: { title: 'Итерация' },
+        yaxis: { title: 'f(x,y)' }
+    });
+    
+    const funcName = document.getElementById('ais-function-select').value;
+    const funcInfo = aisFunctions[funcName];
+    const surfaceData = createAISSurface(
+        funcInfo.f,
+        [funcInfo.range[0], funcInfo.range[1]],
+        [funcInfo.range[0], funcInfo.range[1]],
+        80
+    );
+    
+    Plotly.newPlot('ais-swarm-plot', [{
+        type: 'surface',
+        x: surfaceData.x,
+        y: surfaceData.y,
+        z: surfaceData.z,
+        colorscale: 'Viridis',
+        colorbar: { title: 'f(x,y)' }
+    }], {
+        title: `Функция ${funcInfo.name}`,
+        scene: {
+            xaxis: { title: 'X' },
+            yaxis: { title: 'Y' },
+            zaxis: { title: 'f(X, Y)' },
+            camera: { eye: { x: 1.5, y: 1.5, z: 0.8 } }
+        }
+    });
+    
+    updateAISFunctionInfo();
+}
+
+// Инициализация 6-й лабораторной
+function initAIS() {
+    const startBtn = document.getElementById('ais-start-btn');
+    const stopBtn = document.getElementById('ais-stop-btn');
+    const resetBtn = document.getElementById('ais-reset-btn');
+    const funcSelect = document.getElementById('ais-function-select');
+    
+    if (startBtn) startBtn.onclick = () => startAIS();
+    if (stopBtn) stopBtn.onclick = () => stopAIS();
+    if (resetBtn) resetBtn.onclick = () => resetAIS();
+    if (funcSelect) {
+        funcSelect.onchange = () => {
+            updateAISFunctionInfo();
+            resetAIS();
+        };
+    }
+    
+    resetAIS();
+}
+
+// ========== ЕДИНЫЙ ОБРАБОТЧИК ЗАГРУЗКИ СТРАНИЦЫ ==========
+
 document.addEventListener('DOMContentLoaded', function() {
     console.log("DOM fully loaded - initializing all labs");
     
-    if (!window.labsInitialized) {
-        window.labsInitialized = true;
+    // Инициализация 2-й лабораторной (квадратичное программирование)
+    document.getElementById('solve-qp-btn').addEventListener('click', function() {
+        const result = qpSolver.solve();
+        updateQPResults(result);
+    });
+    
+    document.getElementById('reset-qp-btn').addEventListener('click', function() {
+        qpSolver.reset();
+        document.getElementById('lagrange-function').innerHTML = '';
+        document.getElementById('kkt-conditions').innerHTML = '';
+        document.getElementById('extended-system').innerHTML = '';
+        document.getElementById('simplex-iterations').innerHTML = '';
+        document.getElementById('auxiliary-problem').innerHTML = '';
+        document.getElementById('sol-x1').textContent = '—';
+        document.getElementById('sol-x2').textContent = '—';
+        document.getElementById('sol-f').textContent = '—';
+        document.getElementById('sol-lambda').innerHTML = '—';
+        document.getElementById('qp-status').textContent = '';
+        document.getElementById('qp-status').className = 'qp-status';
+        visualizeQP();
+    });
+    
+    document.getElementById('example-qp-btn').addEventListener('click', function() {
+        document.getElementById('q11').value = 2;
+        document.getElementById('q12').value = 2;
+        document.getElementById('q22').value = 2;
+        document.getElementById('c1').value = -4;
+        document.getElementById('c2').value = -6;
         
-        if (!document.getElementById('lab3')) {
-            initLab3();
-        } else {
-            const startBtn = document.getElementById('ga-start-btn');
-            const stopBtn = document.getElementById('ga-stop-btn');
-            const resetBtn = document.getElementById('ga-reset-btn');
-            
-            if (startBtn) {
-                startBtn.onclick = (e) => {
-                    e.preventDefault();
-                    startGA();
-                };
-            }
-            if (stopBtn) stopBtn.onclick = () => stopGA();
-            if (resetBtn) resetBtn.onclick = () => resetGA();
-        }
+        const container = document.getElementById('constraints-container');
+        container.innerHTML = '';
+        const newRow = document.createElement('div');
+        newRow.className = 'constraint-row';
+        newRow.innerHTML = `
+            <input type="number" id="a11" value="1" step="0.1"> x₁ + 
+            <input type="number" id="a12" value="2" step="0.1"> x₂ ≤ 
+            <input type="number" id="b1" value="2" step="0.1">
+            <button class="remove-constraint" onclick="removeConstraint(this)" style="display:none;">✕</button>
+        `;
+        container.appendChild(newRow);
         
-        initPSO();
+        visualizeQP();
+    });
+    
+    visualizeQP();
+    
+    // Инициализация 3-й лабораторной (генетический алгоритм)
+    if (document.getElementById('lab3')) {
+        console.log("lab3 already exists, reattaching handlers");
+        const startBtn = document.getElementById('ga-start-btn');
+        const stopBtn = document.getElementById('ga-stop-btn');
+        const resetBtn = document.getElementById('ga-reset-btn');
+        
+        if (startBtn) startBtn.onclick = (e) => { e.preventDefault(); startGA(); };
+        if (stopBtn) stopBtn.onclick = () => stopGA();
+        if (resetBtn) resetBtn.onclick = () => resetGA();
     }
+    
+    // Инициализация 4-й лабораторной (рой частиц)
+    initPSO();
+    
+    // Инициализация 5-й лабораторной (пчелиный алгоритм)
+    initBA();
+    
+    // Инициализация 6-й лабораторной (иммунная сеть)
+    initAIS();
+    
+    console.log("All labs initialized successfully!");
 });
