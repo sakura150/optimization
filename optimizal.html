@@ -17,6 +17,8 @@
             <button class="tab-button" onclick="openTab(event, 'lab2')">Лабораторная работа №2: Квадратичное программирование</button>
             <button class="tab-button" onclick="openTab(event, 'lab3')">Лабораторная работа №3: Генетический алгоритм</button>
             <button class="tab-button" onclick="openTab(event, 'lab4')">Лабораторная работа №4: Алгоритм роя частиц</button>
+            <button class="tab-button" onclick="openTab(event, 'lab5')">Лабораторная работа №5: Пчелиный алгоритм</button>
+            <button class="tab-button" onclick="openTab(event, 'lab6')">Лабораторная работа №6: Искусственная иммунная сеть</button>
         </div>
         
         <!-- Лабораторная работа №1: Градиентный спуск -->
@@ -113,7 +115,6 @@
             </div>
             
             <div class="lab2-container">
-                <!-- Левая панель с вводом данных -->
                 <div class="lab2-input-panel">
                     <div class="lab2-card">
                         <h3>Целевая функция (минимизация)</h3>
@@ -158,7 +159,6 @@
                     </div>
                 </div>
                 
-                <!-- Правая панель с результатами -->
                 <div class="lab2-results-panel">
                     <div class="lab2-results-header">
                         <h3>Результаты решения</h3>
@@ -402,6 +402,191 @@
                     <div class="result-section">
                         <h3>Журнал итераций</h3>
                         <div id="pso-log" class="pso-log"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Лабораторная работа №5: Пчелиный алгоритм -->
+        <div id="lab5" class="tab-content">
+            <div class="lab4-container">
+                <div class="lab4-params">
+                    <div class="param-section">
+                        <h3>Параметры пчелиного алгоритма</h3>
+                        <div class="param-row">
+                            <label>Пчел-разведчиков (S°):</label>
+                            <input type="number" id="ba-scouts" value="16" min="1" max="100">
+                        </div>
+                        <div class="param-row">
+                            <label>Элитных участков (|Aᵇ|):</label>
+                            <input type="number" id="ba-elite-sites" value="2" min="0" max="20">
+                        </div>
+                        <div class="param-row">
+                            <label>Перспективных участков (|Aᵖ|):</label>
+                            <input type="number" id="ba-persp-sites" value="3" min="0" max="20">
+                        </div>
+                        <div class="param-row">
+                            <label>Пчел на элитном участке (nᵇ):</label>
+                            <input type="number" id="ba-elite-bees" value="7" min="1" max="50">
+                        </div>
+                        <div class="param-row">
+                            <label>Пчел на перспект. участке (nᵖ):</label>
+                            <input type="number" id="ba-persp-bees" value="4" min="1" max="50">
+                        </div>
+                        <div class="param-row">
+                            <label>Радиус участков (r):</label>
+                            <input type="number" id="ba-radius" value="0.2" step="0.01" min="0.01" max="10">
+                        </div>
+                        <div class="param-row">
+                            <label>Максимум итераций:</label>
+                            <input type="number" id="ba-max-iter" value="500" min="10" max="5000">
+                        </div>
+                        <div class="param-row">
+                            <label>Стагнация (итераций):</label>
+                            <input type="number" id="ba-stagnation" value="20" min="5" max="100">
+                        </div>
+                    </div>
+
+                    <div class="param-section">
+                        <h3>Целевая функция</h3>
+                        <div class="param-row">
+                            <label>Выбор функции:</label>
+                            <select id="ba-function-select">
+                                <option value="rosenbrock">Розенброка</option>
+                                <option value="himmelblau">Химмельблау</option>
+                                <option value="rastrigin">Растригина</option>
+                            </select>
+                        </div>
+                        <div id="ba-func-info" class="function-display">
+                            f(x,y) = 100·(y - x²)² + (1 - x)²<br>
+                            Глобальный минимум: f(1, 1) = 0
+                        </div>
+                    </div>
+
+                    <div class="lab4-button-group">
+                        <button id="ba-start-btn" class="lab4-btn primary">Запустить</button>
+                        <button id="ba-stop-btn" class="lab4-btn secondary" disabled>Остановить</button>
+                        <button id="ba-reset-btn" class="lab4-btn secondary">Сбросить</button>
+                    </div>
+                </div>
+
+                <div class="lab4-results">
+                    <div class="result-section">
+                        <h3>Лучшее решение</h3>
+                        <div id="ba-best-solution" class="best-solution">
+                            <div>x* = <span id="ba-best-x">---</span></div>
+                            <div>y* = <span id="ba-best-y">---</span></div>
+                            <div>f(x*,y*) = <span id="ba-best-f">---</span></div>
+                        </div>
+                    </div>
+                    <div class="result-section">
+                        <h3>Сходимость</h3>
+                        <div id="ba-convergence-plot" style="height: 300px;"></div>
+                    </div>
+                    <div class="result-section">
+                        <h3>Визуализация поиска</h3>
+                        <div id="ba-swarm-plot" style="height: 450px;"></div>
+                    </div>
+                    <div class="result-section">
+                        <h3>Журнал</h3>
+                        <div id="ba-log" class="pso-log"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Лабораторная работа №6: Искусственная иммунная сеть -->
+        <div id="lab6" class="tab-content">
+            <div class="lab6-container">
+                <div class="lab6-params">
+                    <div class="param-section">
+                        <h3>Параметры иммунной сети</h3>
+                        <div class="param-row">
+                            <label>Размер популяции антител (|Sᵇ|):</label>
+                            <input type="number" id="ais-population-size" value="50" min="10" max="500">
+                        </div>
+                        <div class="param-row">
+                            <label>Лучших антител для клонирования (nᵦ):</label>
+                            <input type="number" id="ais-nb" value="10" min="1" max="50">
+                        </div>
+                        <div class="param-row">
+                            <label>Число клонов на антитело (nc):</label>
+                            <input type="number" id="ais-nc" value="5" min="1" max="20">
+                        </div>
+                        <div class="param-row">
+                            <label>Лучших клонов после мутации (nd):</label>
+                            <input type="number" id="ais-nd" value="5" min="1" max="50">
+                        </div>
+                        <div class="param-row">
+                            <label>Коэффициент мутации (α):</label>
+                            <input type="number" id="ais-mutation-rate" value="0.5" step="0.01" min="0.01" max="2.0">
+                        </div>
+                        <div class="param-row">
+                            <label>Степень селекции (bₛ):</label>
+                            <input type="number" id="ais-selection-rate" value="0.1" step="0.01" min="0.01" max="1.0">
+                        </div>
+                        <div class="param-row">
+                            <label>Порог стимуляции (bᵦ):</label>
+                            <input type="number" id="ais-stimulation-threshold" value="0.1" step="0.01" min="0" max="10">
+                        </div>
+                        <div class="param-row">
+                            <label>Порог сжатия (bᵣ):</label>
+                            <input type="number" id="ais-suppression-threshold" value="0.2" step="0.01" min="0" max="10">
+                        </div>
+                        <div class="param-row">
+                            <label>Коэффициент обновления (bₙ):</label>
+                            <input type="number" id="ais-renewal-rate" value="0.1" step="0.01" min="0" max="1">
+                        </div>
+                        <div class="param-row">
+                            <label>Максимум итераций:</label>
+                            <input type="number" id="ais-max-iter" value="200" min="10" max="1000">
+                        </div>
+                        <div class="param-row">
+                            <label>Задержка (мс):</label>
+                            <input type="number" id="ais-delay" value="100" min="0" max="1000" step="50">
+                        </div>
+                    </div>
+                    <div class="param-section">
+                        <h3>Целевая функция</h3>
+                        <div class="param-row">
+                            <label>Выбор функции:</label>
+                            <select id="ais-function-select">
+                                <option value="rosenbrock">Розенброка</option>
+                                <option value="himmelblau">Химмельблау</option>
+                                <option value="rastrigin">Растригина</option>
+                            </select>
+                        </div>
+                        <div id="ais-func-info" class="function-display">
+                            f(x,y) = 100·(y - x²)² + (1 - x)²<br>
+                            Глобальный минимум: f(1, 1) = 0
+                        </div>
+                    </div>
+                    <div class="lab6-button-group">
+                        <button id="ais-start-btn" class="lab6-btn primary">Запустить</button>
+                        <button id="ais-stop-btn" class="lab6-btn secondary" disabled>Остановить</button>
+                        <button id="ais-reset-btn" class="lab6-btn secondary">Сбросить</button>
+                    </div>
+                </div>
+                <div class="lab6-results">
+                    <div class="result-section">
+                        <h3>Лучшее решение</h3>
+                        <div id="ais-best-solution" class="best-solution">
+                            <div>x* = <span id="ais-best-x">—</span></div>
+                            <div>y* = <span id="ais-best-y">—</span></div>
+                            <div>f(x*,y*) = <span id="ais-best-f">—</span></div>
+                        </div>
+                    </div>
+                    <div class="result-section">
+                        <h3>Сходимость</h3>
+                        <div id="ais-convergence-plot" style="height: 300px;"></div>
+                    </div>
+                    <div class="result-section">
+                        <h3>Визуализация поиска</h3>
+                        <div id="ais-swarm-plot" style="height: 450px;"></div>
+                    </div>
+                    <div class="result-section">
+                        <h3>Журнал</h3>
+                        <div id="ais-log" class="ais-log"></div>
                     </div>
                 </div>
             </div>
