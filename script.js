@@ -2709,7 +2709,7 @@ function initPSO() {
     updatePSOFunctionInfo();
 }
 
-// ========== ЛАБОРАТОРНАЯ РАБОТА №5: ПЧЕЛИНЫЙ АЛГОРИТМ (Bees Algorithm) ==========
+// 555555
 
 const baFunctions = {
     rosenbrock: {
@@ -2915,7 +2915,7 @@ class BeesAlgorithm {
 let baSolver = null;
 let baRunning = false;
 
-// Визуализация: ТОЧНО КАК В PYTHON-ПРИМЕРЕ
+// Визуализация
 function createBASurface(func, xRange, yRange, points = 100) {
     const x = [];
     const y = [];
@@ -2930,7 +2930,6 @@ function createBASurface(func, xRange, yRange, points = 100) {
         for (let j = 0; j <= points; j++) {
             const yj = yRange[0] + j * yStep;
             if (i === 0) y.push(yj);
-            // Вычисляем настоящее значение функции, без обрезаний!
             const val = func(xi, yj);
             row.push(val);
         }
@@ -2974,7 +2973,6 @@ async function startBA() {
     const logDiv = document.getElementById('ba-log');
     logDiv.innerHTML = '';
 
-    // Создаем поверхность ТОЧНО как в Python
     const surfaceData = createBASurface(funcInfo.f, params.bounds.x, params.bounds.y, 100);
     
     let convergencePlotCreated = false;
@@ -3007,13 +3005,13 @@ async function startBA() {
             Plotly.update('ba-convergence-plot', { x: [convergenceX], y: [convergenceY] });
         }
 
-        // 3D-визуализация: ТОЧНО КАК В PYTHON
+        // 3D-визуализация
         const scoutsX = data.scouts.map(p => p.x);
         const scoutsY = data.scouts.map(p => p.y);
         const scoutsZ = data.scouts.map(p => p.fitness);
 
         const traces = [
-            // Поверхность функции (как в Python)
+            // Поверхность функции 
             {
                 type: 'surface',
                 x: surfaceData.x,
@@ -3124,7 +3122,6 @@ async function startBA() {
     document.getElementById('ba-stop-btn').disabled = true;
     document.getElementById('ba-reset-btn').disabled = false;
 
-    // ===== ФИНАЛЬНАЯ ВИЗУАЛИЗАЦИЯ С ОСОБОЙ ТОЧКОЙ РЕЗУЛЬТАТА =====
     const finalScoutsX = result.history[result.history.length - 1].scouts.map(p => p.x);
     const finalScoutsY = result.history[result.history.length - 1].scouts.map(p => p.y);
     const finalScoutsZ = result.history[result.history.length - 1].scouts.map(p => p.fitness);
@@ -3276,7 +3273,7 @@ function initBA() {
     resetBA();
 }
 
-// ========== ЛАБОРАТОРНАЯ РАБОТА №6: ИСКУССТВЕННАЯ ИММУННАЯ СЕТЬ ==========
+// 66666666
 
 const aisFunctions = {
     rosenbrock: {
@@ -3310,16 +3307,15 @@ class ArtificialImmuneSystem {
         this.func = func;
         this.bounds = bounds;
         
-        // Параметры алгоритма
-        this.populationSize = 50;      // |S^b|
-        this.nb = 10;                  // n_b - лучших антител для клонирования
-        this.nc = 5;                   // n_c - клонов на антитело
-        this.nd = 5;                   // n_d - лучших клонов после мутации
-        this.mutationRate = 0.5;       // α - коэффициент мутации
-        this.selectionRate = 0.1;      // b_s - степень селекции
-        this.stimulationThreshold = 0.1; // b_b - порог стимуляции
-        this.suppressionThreshold = 0.2; // b_r - порог сжатия
-        this.renewalRate = 0.1;        // b_n - коэффициент обновления
+        this.populationSize = 50;      
+        this.nb = 10;                  
+        this.nc = 5;                   
+        this.nd = 5;                  
+        this.mutationRate = 0.5;     
+        this.selectionRate = 0.1;      
+        this.stimulationThreshold = 0.1; 
+        this.suppressionThreshold = 0.2; 
+        this.renewalRate = 0.1;        
         this.maxIter = 200;
         
         // Состояние алгоритма
@@ -3469,7 +3465,6 @@ class ArtificialImmuneSystem {
             }
         }
         
-        // Сохраняем историю
         this.history.push({
             population: JSON.parse(JSON.stringify(this.population)),
             bestFitness: this.bestFitness,
@@ -3478,12 +3473,10 @@ class ArtificialImmuneSystem {
         });
     }
     
-    // Вспомогательная функция для ограничения значений
     clamp(value, min, max) {
         return Math.max(min, Math.min(max, value));
     }
     
-    // Основной метод решения
     async solve(onIterationCallback, delay = 0) {
         this.isRunning = true;
         this.bestFitness = Infinity;
@@ -3528,17 +3521,14 @@ class ArtificialImmuneSystem {
         };
     }
     
-    // Остановка алгоритма
     stop() {
         this.isRunning = false;
     }
 }
 
-// Глобальные переменные для 6-й лабораторной
 let aisSolver = null;
 let aisRunning = false;
 
-// Функция для создания поверхности (аналогично другим лабам)
 function createAISSurface(func, xRange, yRange, points = 80) {
     const x = [];
     const y = [];
@@ -3561,14 +3551,12 @@ function createAISSurface(func, xRange, yRange, points = 80) {
     return { x, y, z };
 }
 
-// Обновление информации о функции
 function updateAISFunctionInfo() {
     const funcName = document.getElementById('ais-function-select').value;
     const funcInfo = aisFunctions[funcName];
     document.getElementById('ais-func-info').innerHTML = funcInfo.info;
 }
 
-// Запуск алгоритма
 async function startAIS() {
     if (aisRunning) return;
     
@@ -3646,7 +3634,6 @@ async function startAIS() {
             });
         }
         
-        // 3D визуализация
         const popX = data.population.map(p => p.x);
         const popY = data.population.map(p => p.y);
         const popZ = data.population.map(p => p.fitness);
@@ -3765,7 +3752,6 @@ async function startAIS() {
             }, [1, 2, 3, 4]);
         }
         
-        // Журнал (каждые 5 итераций)
         if (data.iteration % 5 === 0 || data.iteration === 1) {
             const entry = document.createElement('div');
             entry.className = 'ais-log-entry';
@@ -3779,12 +3765,10 @@ async function startAIS() {
     const result = await aisSolver.solve(onIteration, delay);
     aisRunning = false;
     
-    // Разблокировка кнопок
     document.getElementById('ais-start-btn').disabled = false;
     document.getElementById('ais-stop-btn').disabled = true;
     document.getElementById('ais-reset-btn').disabled = false;
     
-    // Финальная запись
     const finalEntry = document.createElement('div');
     finalEntry.className = 'ais-log-entry';
     finalEntry.style.color = '#2ecc71';
@@ -3794,7 +3778,6 @@ async function startAIS() {
     logDiv.scrollTop = logDiv.scrollHeight;
 }
 
-// Остановка алгоритма
 function stopAIS() {
     if (aisSolver) aisSolver.stop();
     aisRunning = false;
@@ -3803,7 +3786,6 @@ function stopAIS() {
     document.getElementById('ais-reset-btn').disabled = false;
 }
 
-// Сброс
 function resetAIS() {
     if (aisRunning) stopAIS();
     document.getElementById('ais-best-x').textContent = '—';
@@ -3851,7 +3833,6 @@ function resetAIS() {
     updateAISFunctionInfo();
 }
 
-// Инициализация 6-й лабораторной
 function initAIS() {
     const startBtn = document.getElementById('ais-start-btn');
     const stopBtn = document.getElementById('ais-stop-btn');
@@ -3871,12 +3852,10 @@ function initAIS() {
     resetAIS();
 }
 
-// ========== ЕДИНЫЙ ОБРАБОТЧИК ЗАГРУЗКИ СТРАНИЦЫ ==========
 
 document.addEventListener('DOMContentLoaded', function() {
     console.log("DOM fully loaded - initializing all labs");
     
-    // Инициализация 2-й лабораторной (квадратичное программирование)
     document.getElementById('solve-qp-btn').addEventListener('click', function() {
         const result = qpSolver.solve();
         updateQPResults(result);
@@ -3922,7 +3901,6 @@ document.addEventListener('DOMContentLoaded', function() {
     
     visualizeQP();
     
-    // Инициализация 3-й лабораторной (генетический алгоритм)
     if (document.getElementById('lab3')) {
         console.log("lab3 already exists, reattaching handlers");
         const startBtn = document.getElementById('ga-start-btn');
@@ -3934,13 +3912,10 @@ document.addEventListener('DOMContentLoaded', function() {
         if (resetBtn) resetBtn.onclick = () => resetGA();
     }
     
-    // Инициализация 4-й лабораторной (рой частиц)
     initPSO();
     
-    // Инициализация 5-й лабораторной (пчелиный алгоритм)
     initBA();
     
-    // Инициализация 6-й лабораторной (иммунная сеть)
     initAIS();
     
     console.log("All labs initialized successfully!");
