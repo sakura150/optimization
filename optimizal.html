@@ -19,6 +19,7 @@
             <button class="tab-button" onclick="openTab(event, 'lab4')">Лабораторная работа №4: Алгоритм роя частиц</button>
             <button class="tab-button" onclick="openTab(event, 'lab5')">Лабораторная работа №5: Пчелиный алгоритм</button>
             <button class="tab-button" onclick="openTab(event, 'lab6')">Лабораторная работа №6: Искусственная иммунная сеть</button>
+            <button class="tab-button" onclick="openTab(event, 'lab7')">Лабораторная работа №7: Бактериальная оптимизация</button>
         </div>
         
         <!-- Лабораторная работа №1: Градиентный спуск -->
@@ -587,6 +588,97 @@
                     <div class="result-section">
                         <h3>Журнал</h3>
                         <div id="ais-log" class="ais-log"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div id="lab7" class="tab-content">
+            <div class="lab7-container">
+                <div class="lab7-params">
+                    <div class="param-section">
+                        <h3>Параметры алгоритма BFO</h3>
+                        <div class="param-row">
+                            <label>Размер колонии (|S|):</label>
+                            <input type="number" id="bfo-bacteria-count" value="40" min="10" max="200" step="10">
+                        </div>
+                        <div class="param-row">
+                            <label>Шаги хемотаксиса (ħ):</label>
+                            <input type="number" id="bfo-chemotaxis-steps" value="50" min="10" max="200">
+                        </div>
+                        <div class="param-row">
+                            <label>Шаги репродукции (ħ′):</label>
+                            <input type="number" id="bfo-reproduction-steps" value="10" min="5" max="50">
+                        </div>
+                        <div class="param-row">
+                            <label>Шаги ликвидации (ħ″):</label>
+                            <input type="number" id="bfo-elimination-steps" value="4" min="2" max="20">
+                        </div>
+                        <div class="param-row">
+                            <label>Шаг хемотаксиса (λ):</label>
+                            <input type="number" id="bfo-step-size" value="0.1" min="0.01" max="1" step="0.01">
+                        </div>
+                        <div class="param-row">
+                            <label>Вероятность ликвидации (ξₑ):</label>
+                            <input type="number" id="bfo-probability" value="0.25" min="0" max="1" step="0.05">
+                        </div>
+                        <div class="param-row">
+                            <label>Задержка (мс):</label>
+                            <input type="number" id="bfo-delay" value="100" min="0" max="1000" step="50">
+                        </div>
+                    </div>
+                    <div class="param-section">
+                        <h3>Область поиска</h3>
+                        <div class="param-row">
+                            <label>X min:</label>
+                            <input type="number" id="bfo-x-min" value="-5" step="0.5">
+                        </div>
+                        <div class="param-row">
+                            <label>X max:</label>
+                            <input type="number" id="bfo-x-max" value="5" step="0.5">
+                        </div>
+                        <div class="param-row">
+                            <label>Y min:</label>
+                            <input type="number" id="bfo-y-min" value="-5" step="0.5">
+                        </div>
+                        <div class="param-row">
+                            <label>Y max:</label>
+                            <input type="number" id="bfo-y-max" value="5" step="0.5">
+                        </div>
+                    </div>
+                    <div class="param-section">
+                        <h3>Целевая функция</h3>
+                        <div class="function-display">
+                            f(x,y) = -(x² + y²)<br>
+                            Глобальный максимум: f(0, 0) = 0
+                        </div>
+                    </div>
+                    <div class="lab7-button-group">
+                        <button id="bfo-start-btn" class="lab7-btn primary">Запустить BFO</button>
+                        <button id="bfo-stop-btn" class="lab7-btn secondary" disabled>Остановить</button>
+                        <button id="bfo-reset-btn" class="lab7-btn secondary">Сбросить</button>
+                    </div>
+                </div>
+                <div class="lab7-results">
+                    <div class="result-section">
+                        <h3>Текущее лучшее решение</h3>
+                        <div id="bfo-best-solution" class="best-solution">
+                            <div>x* = <span id="bfo-best-x">—</span></div>
+                            <div>y* = <span id="bfo-best-y">—</span></div>
+                            <div>f(x*,y*) = <span id="bfo-best-f">—</span></div>
+                        </div>
+                    </div>
+                    <div class="result-section">
+                        <h3>График сходимости</h3>
+                        <div id="bfo-convergence-plot" style="height: 280px;"></div>
+                    </div>
+                    <div class="result-section">
+                        <h3>Визуализация колонии бактерий</h3>
+                        <div id="bfo-swarm-plot" style="height: 280px;"></div>
+                    </div>
+                    <div class="result-section">
+                        <h3>Журнал итераций</h3>
+                        <div id="bfo-log" class="bfo-log"></div>
                     </div>
                 </div>
             </div>

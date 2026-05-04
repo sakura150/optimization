@@ -945,3 +945,105 @@ h2 {
         flex-direction: column;
     }
 }
+/* Лабораторная работа №7: BFO */
+.lab7-container {
+    display: flex;
+    gap: 20px;
+    height: calc(100vh - 200px);
+    min-height: 500px;
+}
+
+.lab7-params {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+    overflow-y: auto;
+    padding-right: 10px;
+}
+
+.lab7-results {
+    flex: 3;
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+    overflow-y: auto;
+}
+
+.lab7-button-group {
+    display: flex;
+    gap: 10px;
+    margin-top: 10px;
+}
+
+.lab7-btn {
+    flex: 1;
+    padding: 8px;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    font-weight: bold;
+}
+
+.lab7-btn.primary {
+    background-color: #3498db;
+    color: white;
+}
+
+.lab7-btn.primary:hover {
+    background-color: #2980b9;
+}
+
+.lab7-btn.secondary {
+    background-color: #95a5a6;
+    color: white;
+}
+
+.lab7-btn.secondary:hover {
+    background-color: #7f8c8d;
+}
+
+.lab7-btn:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+}
+
+.bfo-log {
+    background-color: #1e1e1e;
+    color: #d4d4d4;
+    font-family: monospace;
+    font-size: 0.7rem;
+    height: 150px;
+    overflow-y: auto;
+    padding: 8px;
+    border-radius: 6px;
+}
+
+.bfo-log-entry {
+    padding: 2px 0;
+    border-bottom: 1px solid #333;
+}
+
+/* Увеличение графиков для BFO */
+#bfo-swarm-plot {
+    width: 100%;
+    height: 500px !important;
+    min-height: 500px !important;
+}
+
+#bfo-convergence-plot {
+    width: 100%;
+    height: 320px !important;
+    min-height: 320px !important;
+}
+
+@media (min-width: 1200px) {
+    #bfo-swarm-plot {
+        height: 600px !important;
+        min-height: 600px !important;
+    }
+    #bfo-convergence-plot {
+        height: 380px !important;
+        min-height: 380px !important;
+    }
+}
