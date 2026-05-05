@@ -3924,7 +3924,6 @@ document.addEventListener('DOMContentLoaded', function() {
 
 //77777777
 
-
 const bfoSphere = (x, y) => -(x * x + y * y);
 
 class BacterialForagingOptimizer {
@@ -3933,20 +3932,21 @@ class BacterialForagingOptimizer {
     }
 
     reset() {
-        // Параметры алгоритма
-        this.bacteriaCount = 40;        
-        this.chemotaxisSteps = 50;   
-        this.reproductionSteps = 10;  
-        this.eliminationSteps = 4;    
-        this.stepSize = 0.1;            
-        this.eliminationProb = 0.25;    
+        this.bacteriaCount = 40;
+        this.chemotaxisSteps = 50;
+        this.reproductionSteps = 10;
+        this.eliminationSteps = 4;
+        this.stepSize = 0.1;
+        this.eliminationProb = 0.25;
+        this.stagnationLimit = 50;
+        this.targetPrecision = 1e-6;
         
         this.xRange = [-5, 5];
         this.yRange = [-5, 5];
         
         this.func = bfoSphere;
         
-        this.bacteria = [];      
+        this.bacteria = [];
         this.bestPosition = null;
         this.bestValue = -Infinity;
         this.history = [];
@@ -3956,11 +3956,17 @@ class BacterialForagingOptimizer {
         this.currentReproStep = 0;
         this.currentElimStep = 0;
         this.totalIter = 0;
+        this.stagnationCounter = 0;
     }
 
     initPopulation() {
+        if (this.bacteriaCount % 2 !== 0) {
+            this.bacteriaCount += 1;
+        }
+        
         this.bacteria = [];
         this.bestValue = -Infinity;
+        this.stagnationCounter = 0;
         
         for (let i = 0; i < this.bacteriaCount; i++) {
             const x = this.xRange[0] + Math.random() * (this.xRange[1] - this.xRange[0]);
@@ -3980,48 +3986,51 @@ class BacterialForagingOptimizer {
         }
     }
 
-    
     chemotaxisStep() {
+        let improved = false;
+        
         for (let i = 0; i < this.bacteriaCount; i++) {
             const bacterium = this.bacteria[i];
-            let bestNewX = bacterium.position.x;
-            let bestNewY = bacterium.position.y;
-            let bestNewValue = bacterium.value;
             
-            for (let attempt = 0; attempt < 5; attempt++) {
-                const angle = Math.random() * 2 * Math.PI;
-                const dx = Math.cos(angle);
-                const dy = Math.sin(angle);
-                
-                let newX = bacterium.position.x + this.stepSize * dx;
-                let newY = bacterium.position.y + this.stepSize * dy;
-                
-                newX = Math.max(this.xRange[0], Math.min(this.xRange[1], newX));
-                newY = Math.max(this.yRange[0], Math.min(this.yRange[1], newY));
-                
-                const newValue = this.func(newX, newY);
-                
-                if (newValue > bestNewValue) {
-                    bestNewValue = newValue;
-                    bestNewX = newX;
-                    bestNewY = newY;
-                }
-            }
-            if (bestNewValue > bacterium.value) {
-                bacterium.position = { x: bestNewX, y: bestNewY };
-                bacterium.value = bestNewValue;
-            }
+            const Vx = Math.random() * 2 - 1;
+            const Vy = Math.random() * 2 - 1;
+            
+            const norm = Math.sqrt(Vx * Vx + Vy * Vy);
+            
+            if (norm < 1e-10) continue;
+            
+            const dx = Vx / norm;
+            const dy = Vy / norm;
+            
+            let newX = bacterium.position.x + this.stepSize * dx;
+            let newY = bacterium.position.y + this.stepSize * dy;
+            
+            newX = Math.max(this.xRange[0], Math.min(this.xRange[1], newX));
+            newY = Math.max(this.yRange[0], Math.min(this.yRange[1], newY));
+            
+            const newValue = this.func(newX, newY);
+            
+            bacterium.position = { x: newX, y: newY };
+            bacterium.value = newValue;
             
             bacterium.health += bacterium.value;
             
             if (bacterium.value > this.bestValue) {
                 this.bestValue = bacterium.value;
-                this.bestPosition = { x: bacterium.position.x, y: bacterium.position.y };
+                this.bestPosition = { x: newX, y: newY };
+                improved = true;
             }
         }
+        
+        if (improved) {
+            this.stagnationCounter = 0;
+        } else {
+            this.stagnationCounter++;
+        }
+        
+        return improved;
     }
 
-   
     reproduction() {
         const indexed = [];
         for (let i = 0; i < this.bacteriaCount; i++) {
@@ -4030,10 +4039,14 @@ class BacterialForagingOptimizer {
         indexed.sort((a, b) => b.health - a.health);
         
         const survivors = [];
-        for (let i = 0; i < this.bacteriaCount / 2; i++) {
+        const halfCount = Math.floor(this.bacteriaCount / 2);
+        for (let i = 0; i < halfCount; i++) {
             const idx = indexed[i].idx;
             survivors.push({
-                position: { x: this.bacteria[idx].position.x, y: this.bacteria[idx].position.y },
+                position: { 
+                    x: this.bacteria[idx].position.x, 
+                    y: this.bacteria[idx].position.y 
+                },
                 value: this.bacteria[idx].value,
                 health: 0
             });
@@ -4056,51 +4069,92 @@ class BacterialForagingOptimizer {
         this.bacteria = newBacteria;
     }
 
-    
     eliminationAndDispersal() {
-        for (let i = 0; i < this.bacteriaCount; i++) {
-            if (Math.random() < this.eliminationProb) {
-                const x = this.xRange[0] + Math.random() * (this.xRange[1] - this.xRange[0]);
-                const y = this.yRange[0] + Math.random() * (this.yRange[1] - this.yRange[0]);
-                const value = this.func(x, y);
-                
-                this.bacteria[i] = {
-                    position: { x, y },
-                    value: value,
-                    health: 0
-                };
-                
-                if (value > this.bestValue) {
-                    this.bestValue = value;
-                    this.bestPosition = { x, y };
-                }
+
+        const n = Math.floor(this.eliminationProb * this.bacteriaCount);
+        
+        if (n === 0) return;
+        
+        const indicesToEliminate = [];
+        
+        while (indicesToEliminate.length < n) {
+            const idx = Math.floor(Math.random() * this.bacteriaCount);
+            if (!indicesToEliminate.includes(idx)) {
+                indicesToEliminate.push(idx);
+            }
+        }
+        
+        for (const idx of indicesToEliminate) {
+            const x = this.xRange[0] + Math.random() * (this.xRange[1] - this.xRange[0]);
+            const y = this.yRange[0] + Math.random() * (this.yRange[1] - this.yRange[0]);
+            const value = this.func(x, y);
+            
+            this.bacteria[idx] = {
+                position: { x, y },
+                value: value,
+                health: 0
+            };
+            
+            if (value > this.bestValue) {
+                this.bestValue = value;
+                this.bestPosition = { x, y };
             }
         }
     }
 
-    
     resetHealth() {
         for (let i = 0; i < this.bacteriaCount; i++) {
             this.bacteria[i].health = 0;
         }
     }
 
-  
+    checkStopConditions() {
+        if (this.stagnationCounter >= this.stagnationLimit) {
+            return true;
+        }
+        
+        if (Math.abs(this.bestValue) < this.targetPrecision) {
+            return true;
+        }
+        
+        if (this.bestPosition && 
+            Math.abs(this.bestPosition.x) < this.targetPrecision && 
+            Math.abs(this.bestPosition.y) < this.targetPrecision) {
+            return true;
+        }
+        
+        return false;
+    }
+
     async solve(onIteration, delay = 0) {
         this.reset();
         this.initPopulation();
         this.isRunning = true;
         this.totalIter = 0;
         
+        if (onIteration) {
+            onIteration({
+                iteration: 0,
+                chemotaxisStep: 0,
+                reproductionStep: 0,
+                eliminationStep: 0,
+                bestValue: this.bestValue,
+                bestPosition: this.bestPosition,
+                bacteria: this.bacteria
+            });
+        }
+        
         for (let l = 0; l < this.eliminationSteps && this.isRunning; l++) {
             this.currentElimStep = l + 1;
             
             for (let r = 0; r < this.reproductionSteps && this.isRunning; r++) {
                 this.currentReproStep = r + 1;
+                
                 this.resetHealth();
                 
                 for (let t = 0; t < this.chemotaxisSteps && this.isRunning; t++) {
                     this.currentChemoStep = t + 1;
+                    
                     this.chemotaxisStep();
                     this.totalIter++;
                     
@@ -4116,20 +4170,33 @@ class BacterialForagingOptimizer {
                         });
                     }
                     
+                    if (this.checkStopConditions()) {
+                        this.isRunning = false;
+                        break;
+                    }
+                    
                     if (delay > 0) {
                         await new Promise(resolve => setTimeout(resolve, delay));
                     }
                 }
                 
-                this.reproduction();
+                if (this.isRunning) {
+                    this.reproduction();
+                }
             }
             
-            this.eliminationAndDispersal();
+            if (this.isRunning) {
+                this.eliminationAndDispersal();
+            }
         }
+        
+        this.isRunning = false;
         
         return {
             solution: this.bestPosition,
-            value: this.bestValue
+            value: this.bestValue,
+            totalIterations: this.totalIter,
+            history: this.history
         };
     }
 
@@ -4140,7 +4207,6 @@ class BacterialForagingOptimizer {
 
 let bfoSolver = null;
 let bfoRunning = false;
-
 
 function createBFOSurface(xRange, yRange, points = 60) {
     const x = [];
@@ -4157,7 +4223,7 @@ function createBFOSurface(xRange, yRange, points = 60) {
         for (let j = 0; j <= points; j++) {
             const yj = yRange[0] + j * yStep;
             if (i === 0) y.push(yj);
-            const val = -(xi * xi + yj * yj);
+            const val = bfoSphere(xi, yj);
             row.push(val);
         }
         z.push(row);
@@ -4166,17 +4232,23 @@ function createBFOSurface(xRange, yRange, points = 60) {
     return { x, y, z };
 }
 
+function updateBFOFunctionInfo() {
+    const funcInfo = document.getElementById('bfo-func-info');
+    if (funcInfo) {
+        funcInfo.innerHTML = 'f(x, y) = -(x^2 + y^2). Глобальный максимум: f(0, 0) = 0';
+    }
+}
 
 async function startBFO() {
     if (bfoRunning) return;
     
-    // Получаем параметры
     const bacteriaCount = parseInt(document.getElementById('bfo-bacteria-count').value) || 40;
     const chemotaxisSteps = parseInt(document.getElementById('bfo-chemotaxis-steps').value) || 50;
     const reproductionSteps = parseInt(document.getElementById('bfo-reproduction-steps').value) || 10;
     const eliminationSteps = parseInt(document.getElementById('bfo-elimination-steps').value) || 4;
     const stepSize = parseFloat(document.getElementById('bfo-step-size').value) || 0.1;
     const eliminationProb = parseFloat(document.getElementById('bfo-probability').value) || 0.25;
+    const stagnationLimit = parseInt(document.getElementById('bfo-stagnation').value) || 50;
     const xMin = parseFloat(document.getElementById('bfo-x-min').value) || -5;
     const xMax = parseFloat(document.getElementById('bfo-x-max').value) || 5;
     const yMin = parseFloat(document.getElementById('bfo-y-min').value) || -5;
@@ -4184,200 +4256,176 @@ async function startBFO() {
     const delay = parseInt(document.getElementById('bfo-delay').value) || 100;
     
     bfoSolver = new BacterialForagingOptimizer();
-    bfoSolver.bacteriaCount = bacteriaCount;
+    
+    bfoSolver.bacteriaCount = bacteriaCount % 2 === 0 ? bacteriaCount : bacteriaCount + 1;
     bfoSolver.chemotaxisSteps = chemotaxisSteps;
     bfoSolver.reproductionSteps = reproductionSteps;
     bfoSolver.eliminationSteps = eliminationSteps;
     bfoSolver.stepSize = stepSize;
     bfoSolver.eliminationProb = eliminationProb;
+    bfoSolver.stagnationLimit = stagnationLimit;
     bfoSolver.xRange = [xMin, xMax];
     bfoSolver.yRange = [yMin, yMax];
     
-    // Блокировка кнопок
     document.getElementById('bfo-start-btn').disabled = true;
     document.getElementById('bfo-stop-btn').disabled = false;
     document.getElementById('bfo-reset-btn').disabled = true;
     
     const logDiv = document.getElementById('bfo-log');
-    logDiv.innerHTML = '<div class="bfo-log-entry">🚀 Запуск BFO...</div>';
+    logDiv.innerHTML = '';
+    
+    const surfaceData = createBFOSurface([xMin, xMax], [yMin, yMax], 60);
     
     const iterations = [];
     const values = [];
     let convergenceCreated = false;
-    
-    const surfaceData = createBFOSurface([xMin, xMax], [yMin, yMax], 60);
-    
-    const surfaceTrace = {
-        type: 'surface',
-        x: surfaceData.x,
-        y: surfaceData.y,
-        z: surfaceData.z,
-        colorscale: [
-            [0, 'rgb(165,0,38)'],     // темно-красный (минимум)
-            [0.25, 'rgb(215,48,39)'],
-            [0.5, 'rgb(244,109,67)'],
-            [0.75, 'rgb(253,174,97)'],
-            [1, 'rgb(254,224,144)']   // светло-желтый (максимум)
-        ],
-        opacity: 0.85,
-        showscale: true,
-        colorbar: { title: 'f(x,y)', len: 0.6 },
-        name: 'f(x,y) = -(x²+y²)'
-    };
-    
-    // Трассировка бактерий 
-    const bacteriaTrace = {
-        type: 'scatter3d',
-        x: [],
-        y: [],
-        z: [],
-        mode: 'markers',
-        marker: {
-            color: [],
-            size: [],
-            opacity: 0.9,
-            symbol: 'circle',
-            line: { width: 0 }
-        },
-        name: 'Бактерии'
-    };
-    
-    // Лучшая бактерия
-    const bestTrace = {
-        type: 'scatter3d',
-        x: [],
-        y: [],
-        z: [],
-        mode: 'markers',
-        marker: {
-            color: 'gold',
-            size: 12,
-            symbol: 'star',
-            line: { color: 'orange', width: 2 }
-        },
-        name: ' Лучшая бактерия'
-    };
-    
-    // Истинный максимум (0,0,0)
-    const trueMaxTrace = {
-        type: 'scatter3d',
-        x: [0],
-        y: [0],
-        z: [0],
-        mode: 'markers',
-        marker: {
-            color: 'lime',
-            size: 10,
-            symbol: 'circle',
-            line: { color: 'white', width: 2 }
-        },
-        name: '★ Истинный максимум (0,0,0)'
-    };
-    
-    Plotly.newPlot('bfo-swarm-plot', [surfaceTrace, bacteriaTrace, bestTrace, trueMaxTrace], {
-        title: {
-            text: ' Алгоритм бактериальной оптимизации (BFO)',
-            font: { size: 14, color: '#2c3e50' }
-        },
-        scene: {
-            xaxis: { title: 'Ось X', range: [xMin, xMax], gridcolor: 'lightgray' },
-            yaxis: { title: 'Ось Y', range: [yMin, yMax], gridcolor: 'lightgray' },
-            zaxis: { title: 'f(x,y)', range: [-50, 5], gridcolor: 'lightgray' },
-            camera: { eye: { x: 1.8, y: 1.8, z: 1.5 } },
-            bgcolor: 'white'
-        },
-        legend: { x: 0.02, y: 0.98, bgcolor: 'rgba(255,255,255,0.8)' },
-        margin: { l: 0, r: 0, b: 0, t: 40 },
-        paper_bgcolor: 'white',
-        plot_bgcolor: 'white'
-    });
+    let swarmPlotCreated = false;
     
     const onIteration = (data) => {
-        // Обновляем текстовые данные
-        document.getElementById('bfo-best-x').textContent = data.bestPosition.x.toFixed(6);
-        document.getElementById('bfo-best-y').textContent = data.bestPosition.y.toFixed(6);
-        document.getElementById('bfo-best-f').textContent = data.bestValue.toFixed(10);
+        if (data.bestPosition) {
+            document.getElementById('bfo-best-x').textContent = data.bestPosition.x.toFixed(8);
+            document.getElementById('bfo-best-y').textContent = data.bestPosition.y.toFixed(8);
+            document.getElementById('bfo-best-f').textContent = data.bestValue.toFixed(12);
+        }
+        
+        document.getElementById('bfo-iter-count').textContent = data.iteration;
+        document.getElementById('bfo-chemo-count').textContent = data.chemotaxisStep;
+        document.getElementById('bfo-repro-count').textContent = data.reproductionStep;
+        document.getElementById('bfo-elim-count').textContent = data.eliminationStep;
         
         iterations.push(data.iteration);
         values.push(data.bestValue);
         
-        // График сходимости
-        if (convergenceCreated) {
-            Plotly.update('bfo-convergence-plot', 
-                { x: [iterations], y: [values] },
-                {}
-            );
-        } else {
+        if (!convergenceCreated) {
             Plotly.newPlot('bfo-convergence-plot', [{
                 x: iterations,
                 y: values,
                 type: 'scatter',
                 mode: 'lines+markers',
                 line: { color: '#e74c3c', width: 2 },
-                marker: { color: '#e74c3c', size: 3 },
-                name: 'Лучшее значение'
+                marker: { size: 3 },
+                name: 'Best value'
             }], {
-                title: 'Сходимость алгоритма BFO',
-                xaxis: { title: 'Итерация', gridcolor: '#eee' },
-                yaxis: { title: 'f(x,y)', gridcolor: '#eee' },
+                title: 'BFO Convergence',
+                xaxis: { title: 'Iteration' },
+                yaxis: { title: 'f(x,y)' },
                 plot_bgcolor: 'white',
                 paper_bgcolor: 'white'
             });
             convergenceCreated = true;
+        } else {
+            Plotly.update('bfo-convergence-plot', 
+                { x: [iterations], y: [values] },
+                {}
+            );
         }
         
         const bacteriaX = data.bacteria.map(b => b.position.x);
         const bacteriaY = data.bacteria.map(b => b.position.y);
         const bacteriaZ = data.bacteria.map(b => b.value);
         
-        // Цвет бактерий: от красного (плохие) к зеленому (хорошие)
         const colors = data.bacteria.map(b => {
-            // Нормализуем значение от -50 до 0
-            let t = (b.value + 50) / 50;
-            t = Math.min(1, Math.max(0, t));
-            // Красный → Желтый → Зеленый
+            const t = (b.value + 50) / 50;
             const r = Math.floor(255 * (1 - t));
             const g = Math.floor(255 * t);
-            return `rgb(${r}, ${g}, 0)`;
+            return 'rgb(' + r + ',' + g + ',50)';
         });
         
-        // Размер бактерий: чем лучше значение, тем крупнее
         const sizes = data.bacteria.map(b => {
             const t = (b.value + 50) / 50;
-            return 4 + t * 8;
+            return 4 + t * 10;
         });
         
-        // Обновляем бактерии
-        Plotly.update('bfo-swarm-plot',
-            {
-                x: [bacteriaX],
-                y: [bacteriaY],
-                z: [bacteriaZ],
-                'marker.color': [colors],
-                'marker.size': [sizes]
-            },
-            {},
-            [1]
-        );
-        
-        // Обновляем лучшую бактерию
-        if (data.bestPosition) {
-            Plotly.update('bfo-swarm-plot',
-                {
-                    x: [[data.bestPosition.x]],
-                    y: [[data.bestPosition.y]],
-                    z: [[data.bestValue]]
-                },
-                {},
-                [2]
-            );
+        if (swarmPlotCreated) {
+            Plotly.purge('bfo-swarm-plot');
+            swarmPlotCreated = false;
         }
+
+        const traces = [
+            {
+                type: 'surface',
+                x: surfaceData.x,
+                y: surfaceData.y,
+                z: surfaceData.z,
+                colorscale: [
+                    [0, 'rgb(165,0,38)'],
+                    [0.25, 'rgb(215,48,39)'],
+                    [0.5, 'rgb(244,109,67)'],
+                    [0.75, 'rgb(253,174,97)'],
+                    [1, 'rgb(254,224,144)']
+                ],
+                opacity: 0.85,
+                showscale: true,
+                colorbar: { title: 'f(x,y)', len: 0.6 },
+                name: 'f(x,y) = -(x^2+y^2)'
+            },
+            {
+                type: 'scatter3d',
+                x: bacteriaX,
+                y: bacteriaY,
+                z: bacteriaZ,
+                mode: 'markers',
+                marker: {
+                    color: colors,
+                    size: sizes,
+                    opacity: 0.9,
+                    symbol: 'circle',
+                    line: { width: 1, color: 'white' }
+                },
+                name: 'Бактерии'
+            },
+            {
+                type: 'scatter3d',
+                x: [data.bestPosition.x],
+                y: [data.bestPosition.y],
+                z: [data.bestValue],
+                mode: 'markers',
+                marker: {
+                    color: 'gold',
+                    size: 12,
+                    symbol: 'diamond',
+                    line: { color: 'orange', width: 2 }
+                },
+                name: 'Лучшая бактерия'
+            },
+            {
+                type: 'scatter3d',
+                x: [0],
+                y: [0],
+                z: [0],
+                mode: 'markers',
+                marker: {
+                    color: '#2ecc71',
+                    size: 10,
+                    symbol: 'circle',
+                    line: { color: 'white', width: 2 }
+                },
+                name: 'Истинный max (0,0,0)'
+            }
+        ];
+
+        Plotly.newPlot('bfo-swarm-plot', traces, {
+            title: {
+                text: 'BFO: Итерация ' + data.iteration,
+                font: { size: 14, color: '#2c3e50' }
+            },
+            scene: {
+                xaxis: { title: 'X', range: [xMin, xMax] },
+                yaxis: { title: 'Y', range: [yMin, yMax] },
+                zaxis: { title: 'f(x,y)', range: [-50, 5] },
+                camera: { eye: { x: 1.8, y: 1.8, z: 1.5 } }
+            },
+            legend: { x: 0.02, y: 0.98, bgcolor: 'rgba(255,255,255,0.8)' },
+            margin: { l: 0, r: 0, b: 0, t: 60 },
+            paper_bgcolor: 'white',
+            plot_bgcolor: 'white'
+        });
+        swarmPlotCreated = true;
         
         if (data.iteration % 20 === 0 || data.iteration === 1) {
             const entry = document.createElement('div');
             entry.className = 'bfo-log-entry';
-            const percent = ((data.bestValue + 50) / 50 * 100).toFixed(1);
-            entry.textContent = ` Итер ${data.iteration} | хемо=${data.chemotaxisStep} | репр=${data.reproductionStep} | элим=${data.eliminationStep} | f=${data.bestValue.toFixed(6)} (${percent}% от оптимума)`;
+            entry.textContent = 'Итер ' + data.iteration + ' | Хемо: ' + data.chemotaxisStep + ' | Репр: ' + data.reproductionStep + ' | Ликв: ' + data.eliminationStep + ' | f(x,y) = ' + data.bestValue.toFixed(8);
             logDiv.appendChild(entry);
             logDiv.scrollTop = logDiv.scrollHeight;
         }
@@ -4391,8 +4439,9 @@ async function startBFO() {
     finalEntry.className = 'bfo-log-entry';
     finalEntry.style.color = '#27ae60';
     finalEntry.style.fontWeight = 'bold';
-    finalEntry.innerHTML = ` ЗАВЕРШЕНО! Решение: x=${result.solution.x.toFixed(6)}, y=${result.solution.y.toFixed(6)}, f=${result.value.toFixed(10)}`;
+    finalEntry.textContent = 'Завершено. x* = ' + result.solution.x.toFixed(10) + ', y* = ' + result.solution.y.toFixed(10) + ', f(x*,y*) = ' + result.value.toFixed(12) + ', Итераций: ' + result.totalIterations;
     logDiv.appendChild(finalEntry);
+    logDiv.scrollTop = logDiv.scrollHeight;
     
     document.getElementById('bfo-start-btn').disabled = false;
     document.getElementById('bfo-stop-btn').disabled = true;
@@ -4400,26 +4449,25 @@ async function startBFO() {
 }
 
 function stopBFO() {
-    if (bfoSolver) bfoSolver.stop();
+    if (bfoSolver) {
+        bfoSolver.stop();
+    }
     bfoRunning = false;
     document.getElementById('bfo-start-btn').disabled = false;
     document.getElementById('bfo-stop-btn').disabled = true;
     document.getElementById('bfo-reset-btn').disabled = false;
-    
-    const logDiv = document.getElementById('bfo-log');
-    const stopEntry = document.createElement('div');
-    stopEntry.className = 'bfo-log-entry';
-    stopEntry.style.color = '#e74c3c';
-    stopEntry.textContent = '⛔ Алгоритм остановлен пользователем';
-    logDiv.appendChild(stopEntry);
 }
 
 function resetBFO() {
     if (bfoRunning) stopBFO();
     
-    document.getElementById('bfo-best-x').textContent = '—';
-    document.getElementById('bfo-best-y').textContent = '—';
-    document.getElementById('bfo-best-f').textContent = '—';
+    document.getElementById('bfo-best-x').textContent = '-';
+    document.getElementById('bfo-best-y').textContent = '-';
+    document.getElementById('bfo-best-f').textContent = '-';
+    document.getElementById('bfo-iter-count').textContent = '0';
+    document.getElementById('bfo-chemo-count').textContent = '0';
+    document.getElementById('bfo-repro-count').textContent = '0';
+    document.getElementById('bfo-elim-count').textContent = '0';
     document.getElementById('bfo-log').innerHTML = '';
     
     Plotly.purge('bfo-convergence-plot');
@@ -4429,6 +4477,17 @@ function resetBFO() {
     const xMax = parseFloat(document.getElementById('bfo-x-max').value) || 5;
     const yMin = parseFloat(document.getElementById('bfo-y-min').value) || -5;
     const yMax = parseFloat(document.getElementById('bfo-y-max').value) || 5;
+    
+    Plotly.newPlot('bfo-convergence-plot', [{
+        x: [], y: [], type: 'scatter', mode: 'lines+markers',
+        line: { color: '#e74c3c', width: 2 }
+    }], {
+        title: 'Сходимость BFO',
+        xaxis: { title: 'Итерация' },
+        yaxis: { title: 'f(x,y)' },
+        plot_bgcolor: 'white',
+        paper_bgcolor: 'white'
+    });
     
     const surfaceData = createBFOSurface([xMin, xMax], [yMin, yMax], 60);
     
@@ -4447,70 +4506,50 @@ function resetBFO() {
         opacity: 0.85,
         showscale: true,
         colorbar: { title: 'f(x,y)', len: 0.6 },
-        name: 'f(x,y) = -(x²+y²)'
-    };
-    
-    const emptyTrace = {
-        type: 'scatter3d',
-        x: [],
-        y: [],
-        z: [],
-        mode: 'markers',
-        marker: { color: [], size: [] },
-        name: 'Бактерии'
-    };
-    
-    const bestTrace = {
-        type: 'scatter3d',
-        x: [],
-        y: [],
-        z: [],
-        mode: 'markers',
-        marker: { color: 'gold', size: 12, symbol: 'star' },
-        name: '🏆 Лучшая бактерия'
+        name: 'f(x,y) = -(x^2+y^2)'
     };
     
     const trueMaxTrace = {
         type: 'scatter3d',
-        x: [0],
-        y: [0],
-        z: [0],
+        x: [0], y: [0], z: [0],
         mode: 'markers',
-        marker: { color: 'lime', size: 10, symbol: 'circle', line: { color: 'white', width: 2 } },
-        name: '★ Истинный максимум (0,0,0)'
+        marker: {
+            color: '#2ecc71',
+            size: 10,
+            symbol: 'circle',
+            line: { color: 'white', width: 2 }
+        },
+        name: 'True max (0,0,0)'
     };
     
-    Plotly.newPlot('bfo-swarm-plot', [surfaceTrace, emptyTrace, bestTrace, trueMaxTrace], {
-        title: { text: '🐛 Алгоритм бактериальной оптимизации (BFO)', font: { size: 14 } },
+    Plotly.newPlot('bfo-swarm-plot', [surfaceTrace, trueMaxTrace], {
+        title: {
+            text: 'Бактериальная оптимизация (BFO)',
+            font: { size: 14, color: '#2c3e50' }
+        },
         scene: {
-            xaxis: { title: 'Ось X', range: [xMin, xMax] },
-            yaxis: { title: 'Ось Y', range: [yMin, yMax] },
+            xaxis: { title: 'X', range: [xMin, xMax] },
+            yaxis: { title: 'Y', range: [yMin, yMax] },
             zaxis: { title: 'f(x,y)', range: [-50, 5] },
             camera: { eye: { x: 1.8, y: 1.8, z: 1.5 } }
         },
-        legend: { x: 0.02, y: 0.98, bgcolor: 'rgba(255,255,255,0.8)' }
-    });
-    
-    Plotly.newPlot('bfo-convergence-plot', [{
-        x: [], y: [], type: 'scatter', mode: 'lines+markers',
-        line: { color: '#e74c3c', width: 2 }
-    }], {
-        title: 'Сходимость алгоритма BFO',
-        xaxis: { title: 'Итерация' },
-        yaxis: { title: 'f(x,y)' }
+        legend: { x: 0.02, y: 0.98, bgcolor: 'rgba(255,255,255,0.8)' },
+        margin: { l: 0, r: 0, b: 0, t: 60 },
+        paper_bgcolor: 'white',
+        plot_bgcolor: 'white'
     });
 }
-
 
 function initBFO() {
     const startBtn = document.getElementById('bfo-start-btn');
     const stopBtn = document.getElementById('bfo-stop-btn');
     const resetBtn = document.getElementById('bfo-reset-btn');
     
-    if (startBtn) startBtn.onclick = () => startBFO();
-    if (stopBtn) stopBtn.onclick = () => stopBFO();
-    if (resetBtn) resetBtn.onclick = () => resetBFO();
+    if (startBtn) startBtn.onclick = function() { startBFO(); };
+    if (stopBtn) stopBtn.onclick = function() { stopBFO(); };
+    if (resetBtn) resetBtn.onclick = function() { resetBFO(); };
     
+    updateBFOFunctionInfo();
     resetBFO();
 }
 
