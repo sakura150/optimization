@@ -603,24 +603,28 @@
                             <input type="number" id="bfo-bacteria-count" value="40" min="10" max="200" step="10">
                         </div>
                         <div class="param-row">
-                            <label>Шаги хемотаксиса (ħ):</label>
+                            <label>Шаги хемотаксиса (h):</label>
                             <input type="number" id="bfo-chemotaxis-steps" value="50" min="10" max="200">
                         </div>
                         <div class="param-row">
-                            <label>Шаги репродукции (ħ′):</label>
+                            <label>Шаги репродукции (h'):</label>
                             <input type="number" id="bfo-reproduction-steps" value="10" min="5" max="50">
                         </div>
                         <div class="param-row">
-                            <label>Шаги ликвидации (ħ″):</label>
+                            <label>Шаги ликвидации (h''):</label>
                             <input type="number" id="bfo-elimination-steps" value="4" min="2" max="20">
                         </div>
                         <div class="param-row">
-                            <label>Шаг хемотаксиса (λ):</label>
+                            <label>Шаг хемотаксиса (l):</label>
                             <input type="number" id="bfo-step-size" value="0.1" min="0.01" max="1" step="0.01">
                         </div>
                         <div class="param-row">
-                            <label>Вероятность ликвидации (ξₑ):</label>
+                            <label>Вероятность ликвидации (e):</label>
                             <input type="number" id="bfo-probability" value="0.25" min="0" max="1" step="0.05">
+                        </div>
+                        <div class="param-row">
+                            <label>Предел стагнации:</label>
+                            <input type="number" id="bfo-stagnation" value="50" min="10" max="200">
                         </div>
                         <div class="param-row">
                             <label>Задержка (мс):</label>
@@ -648,9 +652,8 @@
                     </div>
                     <div class="param-section">
                         <h3>Целевая функция</h3>
-                        <div class="function-display">
-                            f(x,y) = -(x² + y²)<br>
-                            Глобальный максимум: f(0, 0) = 0
+                        <div class="function-display" id="bfo-func-info">
+                            f(x,y) = -(x^2 + y^2). Глобальный максимум: f(0, 0) = 0
                         </div>
                     </div>
                     <div class="lab7-button-group">
@@ -661,11 +664,20 @@
                 </div>
                 <div class="lab7-results">
                     <div class="result-section">
-                        <h3>Текущее лучшее решение</h3>
+                        <h3>Лучшее решение</h3>
                         <div id="bfo-best-solution" class="best-solution">
-                            <div>x* = <span id="bfo-best-x">—</span></div>
-                            <div>y* = <span id="bfo-best-y">—</span></div>
-                            <div>f(x*,y*) = <span id="bfo-best-f">—</span></div>
+                            <div>x* = <span id="bfo-best-x">-</span></div>
+                            <div>y* = <span id="bfo-best-y">-</span></div>
+                            <div>f(x*,y*) = <span id="bfo-best-f">-</span></div>
+                        </div>
+                    </div>
+                    <div class="result-section">
+                        <h3>Счетчики итераций</h3>
+                        <div class="best-solution" style="background-color: #3498db;">
+                            <div>Всего: <span id="bfo-iter-count">0</span></div>
+                            <div>Хемо: <span id="bfo-chemo-count">0</span></div>
+                            <div>Репр: <span id="bfo-repro-count">0</span></div>
+                            <div>Ликв: <span id="bfo-elim-count">0</span></div>
                         </div>
                     </div>
                     <div class="result-section">
@@ -673,11 +685,11 @@
                         <div id="bfo-convergence-plot" style="height: 280px;"></div>
                     </div>
                     <div class="result-section">
-                        <h3>Визуализация колонии бактерий</h3>
+                        <h3>Колония бактерий</h3>
                         <div id="bfo-swarm-plot" style="height: 280px;"></div>
                     </div>
                     <div class="result-section">
-                        <h3>Журнал итераций</h3>
+                        <h3>Журнал</h3>
                         <div id="bfo-log" class="bfo-log"></div>
                     </div>
                 </div>
