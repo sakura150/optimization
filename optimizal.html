@@ -20,6 +20,7 @@
             <button class="tab-button" onclick="openTab(event, 'lab5')">Лабораторная работа №5: Пчелиный алгоритм</button>
             <button class="tab-button" onclick="openTab(event, 'lab6')">Лабораторная работа №6: Искусственная иммунная сеть</button>
             <button class="tab-button" onclick="openTab(event, 'lab7')">Лабораторная работа №7: Бактериальная оптимизация</button>
+            <button class="tab-button" onclick="openTab(event, 'lab8')">Лабораторная работа №8: Гибридизация ГА-PSO</button>
         </div>
         
         <!-- Лабораторная работа №1: Градиентный спуск -->
@@ -691,6 +692,113 @@
                     <div class="result-section">
                         <h3>Журнал</h3>
                         <div id="bfo-log" class="bfo-log"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+<!-- Лабораторная работа №8: Гибридизация ГА + PSO -->
+        <div id="lab8" class="tab-content">
+            <div class="lab8-container">
+                <!-- ЛЕВАЯ ПАНЕЛЬ -->
+                <div class="lab8-params">
+                    <div class="param-section">
+                        <h3>Параметры гибридного алгоритма (ГА → PSO)</h3>
+                        <div class="param-row">
+                            <label> Размер популяции/роя:</label>
+                            <input type="number" id="hybrid-pop-size" value="40" min="10" max="200" step="10" style="width: 80px;">
+                        </div>
+                        <div class="param-row">
+                            <label> Поколений ГА:</label>
+                            <input type="number" id="hybrid-ga-generations" value="50" min="10" max="200" style="width: 80px;">
+                        </div>
+                        <div class="param-row">
+                            <label> Итераций PSO:</label>
+                            <input type="number" id="hybrid-pso-iterations" value="50" min="10" max="200" style="width: 80px;">
+                        </div>
+                        <div class="param-row">
+                            <label> Вероятность кроссинговера:</label>
+                            <input type="number" id="hybrid-crossover" value="0.8" min="0" max="1" step="0.05" style="width: 80px;">
+                        </div>
+                        <div class="param-row">
+                            <label> Вероятность мутации:</label>
+                            <input type="number" id="hybrid-mutation" value="0.05" min="0" max="0.5" step="0.005" style="width: 80px;">
+                        </div>
+                        <div class="param-row">
+                            <label> Инерция PSO:</label>
+                            <input type="number" id="hybrid-w" value="0.7" min="0.1" max="1.5" step="0.05" style="width: 80px;">
+                        </div>
+                        <div class="param-row">
+                            <label> Когнитивный PSO:</label>
+                            <input type="number" id="hybrid-c1" value="1.5" min="0.1" max="3.0" step="0.1" style="width: 80px;">
+                        </div>
+                        <div class="param-row">
+                            <label> Социальный PSO:</label>
+                            <input type="number" id="hybrid-c2" value="1.5" min="0.1" max="3.0" step="0.1" style="width: 80px;">
+                        </div>
+                        <div class="param-row">
+                            <label>⏱ Задержка (мс):</label>
+                            <input type="number" id="hybrid-delay" value="50" min="0" max="500" step="10" style="width: 80px;">
+                        </div>
+                    </div>
+                    
+                    <div class="param-section">
+                        <h3> Область поиска</h3>
+                        <div class="param-row">
+                            <label>X: [</label>
+                            <input type="number" id="hybrid-x-min" value="-5" step="0.5" style="width: 70px;">
+                            <span> , </span>
+                            <input type="number" id="hybrid-x-max" value="5" step="0.5" style="width: 70px;">
+                            <span> ]</span>
+                        </div>
+                        <div class="param-row">
+                            <label>Y: [</label>
+                            <input type="number" id="hybrid-y-min" value="-5" step="0.5" style="width: 70px;">
+                            <span> , </span>
+                            <input type="number" id="hybrid-y-max" value="5" step="0.5" style="width: 70px;">
+                            <span> ]</span>
+                        </div>
+                    </div>
+                    
+                    <div class="param-section">
+                        <h3> Выбор целевой функции</h3>
+                        <div class="param-row">
+                            <label>Функция:</label>
+                            <select id="hybrid-function-select" style="width: 140px;">
+                                <option value="sphere">Сфера (макс: x²+y²)</option>
+                                <option value="rosenbrock" selected>Розенброка (мин: f(1,1)=0)</option>
+                                <option value="rastrigin">Растригина (мин: f(0,0)=0)</option>
+                                <option value="ackley">Акли (мин: f(0,0)=0)</option>
+                            </select>
+                        </div>
+                        <div id="hybrid-func-info" class="function-display" style="margin-top: 8px; font-size: 0.7rem;">
+                            f(x,y) = 100·(y - x²)² + (1 - x)²<br>
+                            Глобальный минимум: f(1, 1) = 0
+                        </div>
+                    </div>
+                    
+                    <div class="lab8-button-group">
+                        <button id="hybrid-start-btn" class="lab8-btn primary">ЗАПУСТИТЬ</button>
+                        <button id="hybrid-stop-btn" class="lab8-btn secondary" disabled> СТОП</button>
+                        <button id="hybrid-reset-btn" class="lab8-btn secondary"> СБРОС</button>
+                    </div>
+                </div>
+                
+                <!-- ПРАВАЯ ПАНЕЛЬ -->
+                <div class="lab8-results">
+                    <div id="hybrid-best-solution" class="best-solution" style="margin-bottom: 10px; padding: 10px;">
+                        <div> Лучшее решение: x* = <span id="hybrid-best-x" style="color: #ffd700;">—</span> &nbsp; y* = <span id="hybrid-best-y" style="color: #ffd700;">—</span> &nbsp; f* = <span id="hybrid-best-f" style="color: #ffd700;">—</span></div>
+                    </div>
+                    
+                    <div class="result-section" style="flex: 3;">
+                        <div id="hybrid-swarm-plot" style="width: 100%; height: 500px; border-radius: 8px; background: #fff;"></div>
+                    </div>
+                    
+                    <div class="result-section" style="flex: 1.5;">
+                        <div id="hybrid-convergence-plot" style="width: 100%; height: 250px; border-radius: 8px; background: #fff;"></div>
+                    </div>
+                    
+                    <div class="result-section" style="flex: 1;">
+                        <div id="hybrid-log" class="hybrid-log" style="height: 120px; font-size: 0.7rem;"></div>
                     </div>
                 </div>
             </div>

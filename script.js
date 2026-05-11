@@ -4558,3 +4558,513 @@ if (document.readyState === 'loading') {
 } else {
     initBFO();
 }
+
+/////8888888888
+// ========== ЛАБОРАТОРНАЯ РАБОТА №8: ГИБРИДНЫЙ АЛГОРИТМ (ГА + PSO) ==========
+
+// Доступные целевые функции
+const hybridFunctions = {
+    sphere: {
+        name: 'Сфера',
+        f: (x, y) => -(x * x + y * y),  // максимизация (унарный минус)
+        globalOptimum: [0, 0],
+        globalValue: 0,
+        info: 'f(x,y) = -(x² + y²)<br>Глобальный максимум: f(0, 0) = 0',
+        isMaximization: true,
+        range: [-5, 5]
+    },
+    rosenbrock: {
+        name: 'Розенброка',
+        f: (x, y) => -(100 * Math.pow(y - x * x, 2) + Math.pow(1 - x, 2)),  // минимизация через унарный минус
+        globalOptimum: [1, 1],
+        globalValue: 0,
+        info: 'f(x,y) = -[100·(y - x²)² + (1 - x)²]<br>Глобальный минимум: f(1, 1) = 0',
+        isMaximization: false,
+        range: [-2, 2]
+    },
+    rastrigin: {
+        name: 'Растригина',
+        f: (x, y) => -(20 + x * x + y * y - 10 * (Math.cos(2 * Math.PI * x) + Math.cos(2 * Math.PI * y))),
+        globalOptimum: [0, 0],
+        globalValue: 0,
+        info: 'f(x,y) = -[20 + x² + y² - 10·(cos(2πx) + cos(2πy))]<br>Глобальный минимум: f(0, 0) = 0',
+        isMaximization: false,
+        range: [-5.12, 5.12]
+    },
+    ackley: {
+        name: 'Акли',
+        f: (x, y) => -(-20 * Math.exp(-0.2 * Math.sqrt(0.5 * (x * x + y * y))) - Math.exp(0.5 * (Math.cos(2 * Math.PI * x) + Math.cos(2 * Math.PI * y))) + 20 + Math.E),
+        globalOptimum: [0, 0],
+        globalValue: 0,
+        info: 'f(x,y) = -[ -20·exp(-0.2·√(0.5·(x²+y²))) - exp(0.5·(cos(2πx)+cos(2πy))) + 20 + e ]<br>Глобальный минимум: f(0, 0) = 0',
+        isMaximization: false,
+        range: [-5, 5]
+    }
+};
+
+// Получить текущую функцию
+function getCurrentHybridFunction() {
+    const funcName = document.getElementById('hybrid-function-select').value;
+    return hybridFunctions[funcName];
+}
+
+// Обновить информацию о функции
+function updateHybridFunctionInfo() {
+    const funcInfo = getCurrentHybridFunction();
+    document.getElementById('hybrid-func-info').innerHTML = funcInfo.info;
+    
+    // Обновляем диапазоны поиска
+    const range = funcInfo.range;
+    document.getElementById('hybrid-x-min').value = range[0];
+    document.getElementById('hybrid-x-max').value = range[1];
+    document.getElementById('hybrid-y-min').value = range[0];
+    document.getElementById('hybrid-y-max').value = range[1];
+    
+    // Перерисовываем поверхность
+    const xMin = range[0];
+    const xMax = range[1];
+    const yMin = range[0];
+    const yMax = range[1];
+    
+    const surface = createHybridSurface(funcInfo.f, [xMin, xMax], [yMin, yMax]);
+    
+    Plotly.purge('hybrid-swarm-plot');
+    Plotly.newPlot('hybrid-swarm-plot', [{
+        type: 'surface', x: surface.x, y: surface.y, z: surface.z,
+        colorscale: [[0,'rgb(165,0,38)'],[0.5,'rgb(244,109,67)'],[1,'rgb(254,224,144)']],
+        opacity: 0.85, showscale: true, name: funcInfo.name
+    }, {
+        type: 'scatter3d', x: [], y: [], z: [], mode: 'markers',
+        marker: { color: [], size: 6, opacity: 0.8 }, name: 'Агенты'
+    }, {
+        type: 'scatter3d', x: [], y: [], z: [], mode: 'markers',
+        marker: { color: 'gold', size: 12, symbol: 'star' }, name: 'Лучший'
+    }, {
+        type: 'scatter3d', x: [funcInfo.globalOptimum[0]], y: [funcInfo.globalOptimum[1]], z: [funcInfo.globalValue],
+        mode: 'markers', marker: { color: 'lime', size: 10, symbol: 'circle' }, name: '★ Истинный оптимум'
+    }], {
+        scene: { xaxis: { range: [xMin, xMax] }, yaxis: { range: [yMin, yMax] }, zaxis: { autorange: true }, camera: { eye: { x: 1.8, y: 1.8, z: 1.5 } } }
+    });
+}
+
+// Обновленная функция создания поверхности
+function createHybridSurface(func, xRange, yRange) {
+    const x = [], y = [], z = [];
+    const steps = 50;
+    for (let i = 0; i <= steps; i++) {
+        const xi = xRange[0] + i * (xRange[1] - xRange[0]) / steps;
+        x.push(xi);
+        const row = [];
+        for (let j = 0; j <= steps; j++) {
+            const yj = yRange[0] + j * (yRange[1] - yRange[0]) / steps;
+            if (i === 0) y.push(yj);
+            let val = func(xi, yj);
+            if (isNaN(val) || val < -100) val = -100;
+            if (val > 100) val = 100;
+            row.push(val);
+        }
+        z.push(row);
+    }
+    return { x, y, z };
+}
+
+// HybridGA - обновлен для работы с любой функцией
+class HybridGA {
+    constructor(popSize, generations, crossoverProb, mutationProb, xRange, yRange, func) {
+        this.popSize = popSize;
+        this.generations = generations;
+        this.crossoverProb = crossoverProb;
+        this.mutationProb = mutationProb;
+        this.xRange = xRange;
+        this.yRange = yRange;
+        this.func = func;
+        this.population = [];
+        this.bestPosition = null;
+        this.bestValue = -Infinity;
+    }
+
+    initPopulation() {
+        this.population = [];
+        this.bestValue = -Infinity;
+        for (let i = 0; i < this.popSize; i++) {
+            const x = this.xRange[0] + Math.random() * (this.xRange[1] - this.xRange[0]);
+            const y = this.yRange[0] + Math.random() * (this.yRange[1] - this.yRange[0]);
+            const value = this.func(x, y);
+            this.population.push({ x, y });
+            if (value > this.bestValue) {
+                this.bestValue = value;
+                this.bestPosition = { x, y };
+            }
+        }
+    }
+
+    tournamentSelection() {
+        let bestIdx = -1, bestFitness = -Infinity;
+        for (let i = 0; i < 3; i++) {
+            const idx = Math.floor(Math.random() * this.popSize);
+            const val = this.func(this.population[idx].x, this.population[idx].y);
+            if (val > bestFitness) {
+                bestFitness = val;
+                bestIdx = idx;
+            }
+        }
+        return { x: this.population[bestIdx].x, y: this.population[bestIdx].y };
+    }
+
+    crossover(p1, p2) {
+        if (Math.random() < this.crossoverProb) {
+            const alpha = Math.random();
+            return [
+                { x: alpha * p1.x + (1 - alpha) * p2.x, y: alpha * p1.y + (1 - alpha) * p2.y },
+                { x: (1 - alpha) * p1.x + alpha * p2.x, y: (1 - alpha) * p1.y + alpha * p2.y }
+            ];
+        }
+        return [{ x: p1.x, y: p1.y }, { x: p2.x, y: p2.y }];
+    }
+
+    mutate(ind, gen) {
+        const t = gen / this.generations;
+        const strength = 0.2 * (1 - t);
+        let { x, y } = ind;
+        if (Math.random() < this.mutationProb) {
+            x += (Math.random() - 0.5) * (this.xRange[1] - this.xRange[0]) * strength;
+            x = Math.max(this.xRange[0], Math.min(this.xRange[1], x));
+        }
+        if (Math.random() < this.mutationProb) {
+            y += (Math.random() - 0.5) * (this.yRange[1] - this.yRange[0]) * strength;
+            y = Math.max(this.yRange[0], Math.min(this.yRange[1], y));
+        }
+        return { x, y };
+    }
+
+    async run(onGen, delay) {
+        this.initPopulation();
+        for (let g = 0; g < this.generations; g++) {
+            const newPop = [];
+            const sorted = [...this.population].sort((a, b) => this.func(b.x, b.y) - this.func(a.x, a.y));
+            newPop.push(sorted[0], sorted[1]);
+            
+            while (newPop.length < this.popSize) {
+                let [c1, c2] = this.crossover(this.tournamentSelection(), this.tournamentSelection());
+                c1 = this.mutate(c1, g);
+                c2 = this.mutate(c2, g);
+                newPop.push(c1);
+                if (newPop.length < this.popSize) newPop.push(c2);
+            }
+            
+            this.population = newPop;
+            for (let i of this.population) {
+                const v = this.func(i.x, i.y);
+                if (v > this.bestValue) {
+                    this.bestValue = v;
+                    this.bestPosition = { x: i.x, y: i.y };
+                }
+            }
+            
+            if (onGen) await onGen(g + 1, this.population, this.bestPosition, this.bestValue);
+            if (delay > 0) await new Promise(r => setTimeout(r, delay));
+        }
+        return { finalPopulation: this.population, bestPosition: this.bestPosition, bestValue: this.bestValue };
+    }
+}
+
+// HybridPSO - обновлен
+class HybridPSO {
+    constructor(swarmSize, iter, w, c1, c2, xRange, yRange, func, initialSwarm) {
+        this.swarmSize = swarmSize;
+        this.iterations = iter;
+        this.w = w;
+        this.c1 = c1;
+        this.c2 = c2;
+        this.xRange = xRange;
+        this.yRange = yRange;
+        this.func = func;
+        this.initialSwarm = initialSwarm;
+        this.particles = [];
+        this.gBestPosition = null;
+        this.gBestValue = -Infinity;
+    }
+
+    async run(onIter, delay) {
+        this.particles = [];
+        this.gBestValue = -Infinity;
+        
+        for (let i = 0; i < this.swarmSize; i++) {
+            let x, y;
+            if (this.initialSwarm && i < this.initialSwarm.length) {
+                x = this.initialSwarm[i].x;
+                y = this.initialSwarm[i].y;
+            } else {
+                x = this.xRange[0] + Math.random() * (this.xRange[1] - this.xRange[0]);
+                y = this.yRange[0] + Math.random() * (this.yRange[1] - this.yRange[0]);
+            }
+            const vx = (Math.random() - 0.5) * (this.xRange[1] - this.xRange[0]) / 2;
+            const vy = (Math.random() - 0.5) * (this.yRange[1] - this.yRange[0]) / 2;
+            const val = this.func(x, y);
+            this.particles.push({ position: { x, y }, velocity: { x: vx, y: vy }, pbest: { x, y }, pbestVal: val });
+            if (val > this.gBestValue) {
+                this.gBestValue = val;
+                this.gBestPosition = { x, y };
+            }
+        }
+        
+        for (let it = 0; it < this.iterations; it++) {
+            for (let p of this.particles) {
+                const r1 = Math.random(), r2 = Math.random();
+                p.velocity.x = this.w * p.velocity.x + this.c1 * r1 * (p.pbest.x - p.position.x) + this.c2 * r2 * (this.gBestPosition.x - p.position.x);
+                p.velocity.y = this.w * p.velocity.y + this.c1 * r1 * (p.pbest.y - p.position.y) + this.c2 * r2 * (this.gBestPosition.y - p.position.y);
+                
+                let nx = p.position.x + p.velocity.x;
+                let ny = p.position.y + p.velocity.y;
+                nx = Math.max(this.xRange[0], Math.min(this.xRange[1], nx));
+                ny = Math.max(this.yRange[0], Math.min(this.yRange[1], ny));
+                
+                p.position = { x: nx, y: ny };
+                const newVal = this.func(nx, ny);
+                
+                if (newVal > p.pbestVal) {
+                    p.pbest = { x: nx, y: ny };
+                    p.pbestVal = newVal;
+                    if (newVal > this.gBestValue) {
+                        this.gBestValue = newVal;
+                        this.gBestPosition = { x: nx, y: ny };
+                    }
+                }
+            }
+            
+            if (onIter) await onIter(it + 1, this.particles, this.gBestPosition, this.gBestValue);
+            if (delay > 0) await new Promise(r => setTimeout(r, delay));
+        }
+        return { bestPosition: this.gBestPosition, bestValue: this.gBestValue };
+    }
+}
+
+// HybridGAPSO - обновлен
+class HybridGAPSO {
+    constructor() {
+        this.popSize = 40;
+        this.gaGenerations = 50;
+        this.psoIterations = 50;
+        this.crossoverProb = 0.8;
+        this.mutationProb = 0.05;
+        this.w = 0.7;
+        this.c1 = 1.5;
+        this.c2 = 1.5;
+        this.xRange = [-2, 2];
+        this.yRange = [-2, 2];
+        this.isRunning = false;
+        this.func = hybridFunctions.rosenbrock.f;
+    }
+    
+    async solve(onProgress, delay) {
+        this.isRunning = true;
+        
+        const ga = new HybridGA(this.popSize, this.gaGenerations, this.crossoverProb, this.mutationProb, this.xRange, this.yRange, this.func);
+        const gaResult = await ga.run(async (gen, pop, bestPos, bestVal) => {
+            if (!this.isRunning) throw new Error("stopped");
+            await onProgress('ga', gen, null, pop, bestPos, bestVal);
+        }, delay);
+        
+        if (!this.isRunning) return null;
+        
+        const pso = new HybridPSO(this.popSize, this.psoIterations, this.w, this.c1, this.c2, this.xRange, this.yRange, this.func, gaResult.finalPopulation);
+        const psoResult = await pso.run(async (iter, particles, bestPos, bestVal) => {
+            if (!this.isRunning) throw new Error("stopped");
+            await onProgress('pso', iter, particles, null, bestPos, bestVal);
+        }, delay);
+        
+        return psoResult;
+    }
+    
+    stop() { this.isRunning = false; }
+}
+
+let hybridSolver = null;
+let hybridRunning = false;
+
+// Обновленный startHybrid
+async function startHybrid() {
+    if (hybridRunning) {
+        console.log("Алгоритм уже запущен");
+        return;
+    }
+    
+    console.log("startHybrid вызван!");
+    
+    const funcInfo = getCurrentHybridFunction();
+    
+    hybridSolver = new HybridGAPSO();
+    hybridSolver.popSize = parseInt(document.getElementById('hybrid-pop-size').value) || 40;
+    hybridSolver.gaGenerations = parseInt(document.getElementById('hybrid-ga-generations').value) || 50;
+    hybridSolver.psoIterations = parseInt(document.getElementById('hybrid-pso-iterations').value) || 50;
+    hybridSolver.crossoverProb = parseFloat(document.getElementById('hybrid-crossover').value) || 0.8;
+    hybridSolver.mutationProb = parseFloat(document.getElementById('hybrid-mutation').value) || 0.05;
+    hybridSolver.w = parseFloat(document.getElementById('hybrid-w').value) || 0.7;
+    hybridSolver.c1 = parseFloat(document.getElementById('hybrid-c1').value) || 1.5;
+    hybridSolver.c2 = parseFloat(document.getElementById('hybrid-c2').value) || 1.5;
+    hybridSolver.xRange = [parseFloat(document.getElementById('hybrid-x-min').value) || funcInfo.range[0], parseFloat(document.getElementById('hybrid-x-max').value) || funcInfo.range[1]];
+    hybridSolver.yRange = [parseFloat(document.getElementById('hybrid-y-min').value) || funcInfo.range[0], parseFloat(document.getElementById('hybrid-y-max').value) || funcInfo.range[1]];
+    hybridSolver.func = funcInfo.f;
+    
+    const delay = parseInt(document.getElementById('hybrid-delay').value) || 50;
+    
+    document.getElementById('hybrid-start-btn').disabled = true;
+    document.getElementById('hybrid-stop-btn').disabled = false;
+    document.getElementById('hybrid-reset-btn').disabled = true;
+    
+    const logDiv = document.getElementById('hybrid-log');
+    logDiv.innerHTML = '<div class="hybrid-log-entry">🚀 Запуск гибридного алгоритма ГА-PSO...</div>';
+    
+    const surface = createHybridSurface(hybridSolver.func, hybridSolver.xRange, hybridSolver.yRange);
+    
+    Plotly.newPlot('hybrid-swarm-plot', [{
+        type: 'surface', x: surface.x, y: surface.y, z: surface.z,
+        colorscale: [[0,'rgb(165,0,38)'],[0.5,'rgb(244,109,67)'],[1,'rgb(254,224,144)']],
+        opacity: 0.85, showscale: true, name: funcInfo.name
+    }, {
+        type: 'scatter3d', x: [], y: [], z: [], mode: 'markers',
+        marker: { color: [], size: 6, opacity: 0.8 }, name: 'Агенты'
+    }, {
+        type: 'scatter3d', x: [], y: [], z: [], mode: 'markers',
+        marker: { color: 'gold', size: 12, symbol: 'star' }, name: 'Лучший'
+    }, {
+        type: 'scatter3d', x: [funcInfo.globalOptimum[0]], y: [funcInfo.globalOptimum[1]], z: [funcInfo.globalValue],
+        mode: 'markers', marker: { color: 'lime', size: 10, symbol: 'circle' }, name: '★ Истинный оптимум'
+    }], {
+        scene: { xaxis: { range: hybridSolver.xRange }, yaxis: { range: hybridSolver.yRange }, zaxis: { autorange: true }, camera: { eye: { x: 1.8, y: 1.8, z: 1.5 } } }
+    });
+    
+    let convData = { x: [], y: [] };
+    Plotly.newPlot('hybrid-convergence-plot', [{ x: [], y: [], type: 'scatter', mode: 'lines+markers', line: { color: '#e74c3c', width: 2 } }], {
+        title: 'Сходимость', xaxis: { title: 'Итерация' }, yaxis: { title: 'f(x,y)' }
+    });
+    
+    const onProgress = async (phase, step, particles, population, bestPos, bestVal) => {
+        document.getElementById('hybrid-best-x').textContent = bestPos.x.toFixed(6);
+        document.getElementById('hybrid-best-y').textContent = bestPos.y.toFixed(6);
+        document.getElementById('hybrid-best-f').textContent = bestVal.toFixed(10);
+        
+        convData.x.push(step);
+        convData.y.push(bestVal);
+        Plotly.update('hybrid-convergence-plot', { x: [convData.x], y: [convData.y] });
+        
+        let agents = phase === 'ga' ? population : particles?.map(p => p.position);
+        if (agents && agents.length > 0) {
+            const ax = agents.map(a => a.x), ay = agents.map(a => a.y), az = agents.map(a => hybridSolver.func(a.x, a.y));
+            const colors = az.map(z => { let t = (z + 50) / 50; return `rgb(${Math.floor(100 * (1-t))}, ${Math.floor(200 * t)}, ${Math.floor(100 * t)})`; });
+            Plotly.update('hybrid-swarm-plot', { x: [ax], y: [ay], z: [az], 'marker.color': [colors] }, {}, [1]);
+            Plotly.update('hybrid-swarm-plot', { x: [[bestPos.x]], y: [[bestPos.y]], z: [[bestVal]] }, {}, [2]);
+        }
+        
+        if (step === 1 || step % 10 === 0) {
+            const entry = document.createElement('div');
+            entry.className = `hybrid-log-entry ${phase === 'ga' ? 'ga-phase' : 'pso-phase'}`;
+            entry.textContent = phase === 'ga' ? `🧬 ГА: поколение ${step}, f = ${bestVal.toFixed(6)}` : `🐝 PSO: итерация ${step}, f = ${bestVal.toFixed(8)}`;
+            logDiv.appendChild(entry);
+            logDiv.scrollTop = logDiv.scrollHeight;
+        }
+    };
+    
+    hybridRunning = true;
+    const result = await hybridSolver.solve(onProgress, delay);
+    hybridRunning = false;
+    
+    if (result) {
+        const entry = document.createElement('div');
+        entry.className = 'hybrid-log-entry success';
+        entry.innerHTML = `✅ Завершено! Решение: (${result.bestPosition.x.toFixed(8)}, ${result.bestPosition.y.toFixed(8)}) → f = ${result.bestValue.toFixed(10)}`;
+        logDiv.appendChild(entry);
+    }
+    
+    document.getElementById('hybrid-start-btn').disabled = false;
+    document.getElementById('hybrid-stop-btn').disabled = true;
+    document.getElementById('hybrid-reset-btn').disabled = false;
+}
+
+function stopHybrid() {
+    if (hybridSolver) hybridSolver.stop();
+    hybridRunning = false;
+    document.getElementById('hybrid-start-btn').disabled = false;
+    document.getElementById('hybrid-stop-btn').disabled = true;
+    document.getElementById('hybrid-reset-btn').disabled = false;
+    const logDiv = document.getElementById('hybrid-log');
+    if (logDiv) logDiv.innerHTML += '<div class="hybrid-log-entry" style="color:#e74c3c;">⛔ Остановлено пользователем</div>';
+}
+
+function resetHybrid() {
+    if (hybridRunning) stopHybrid();
+    
+    const bestX = document.getElementById('hybrid-best-x');
+    const bestY = document.getElementById('hybrid-best-y');
+    const bestF = document.getElementById('hybrid-best-f');
+    if (bestX) bestX.textContent = '—';
+    if (bestY) bestY.textContent = '—';
+    if (bestF) bestF.textContent = '—';
+    
+    const logDiv = document.getElementById('hybrid-log');
+    if (logDiv) logDiv.innerHTML = '';
+    
+    const funcInfo = getCurrentHybridFunction();
+    const xMin = parseFloat(document.getElementById('hybrid-x-min')?.value) || funcInfo.range[0];
+    const xMax = parseFloat(document.getElementById('hybrid-x-max')?.value) || funcInfo.range[1];
+    const yMin = parseFloat(document.getElementById('hybrid-y-min')?.value) || funcInfo.range[0];
+    const yMax = parseFloat(document.getElementById('hybrid-y-max')?.value) || funcInfo.range[1];
+    
+    const surface = createHybridSurface(funcInfo.f, [xMin, xMax], [yMin, yMax]);
+    
+    Plotly.purge('hybrid-swarm-plot');
+    Plotly.newPlot('hybrid-swarm-plot', [{
+        type: 'surface', x: surface.x, y: surface.y, z: surface.z,
+        colorscale: [[0,'rgb(165,0,38)'],[0.5,'rgb(244,109,67)'],[1,'rgb(254,224,144)']],
+        opacity: 0.85, name: funcInfo.name
+    }, {
+        type: 'scatter3d', x: [], y: [], z: [], mode: 'markers', marker: { size: 6 }, name: 'Агенты'
+    }, {
+        type: 'scatter3d', x: [], y: [], z: [], mode: 'markers', marker: { color: 'gold', size: 12, symbol: 'star' }, name: 'Лучший'
+    }, {
+        type: 'scatter3d', x: [funcInfo.globalOptimum[0]], y: [funcInfo.globalOptimum[1]], z: [funcInfo.globalValue],
+        mode: 'markers', marker: { color: 'lime', size: 10, symbol: 'circle' }, name: '★ Истинный оптимум'
+    }], {
+        scene: { xaxis: { range: [xMin, xMax] }, yaxis: { range: [yMin, yMax] }, zaxis: { autorange: true }, camera: { eye: { x: 1.8, y: 1.8, z: 1.5 } } }
+    });
+    
+    Plotly.purge('hybrid-convergence-plot');
+    Plotly.newPlot('hybrid-convergence-plot', [{ x: [], y: [], type: 'scatter', mode: 'lines+markers', line: { color: '#e74c3c', width: 2 } }], {
+        title: 'Сходимость', xaxis: { title: 'Итерация' }, yaxis: { title: 'f(x,y)' }
+    });
+    
+    console.log("Графики 8-й лабораторной сброшены");
+}
+
+function initHybridLab() {
+    console.log("Инициализация 8-й лабораторной (Гибридный ГА-PSO)");
+    
+    const startBtn = document.getElementById('hybrid-start-btn');
+    const stopBtn = document.getElementById('hybrid-stop-btn');
+    const resetBtn = document.getElementById('hybrid-reset-btn');
+    const funcSelect = document.getElementById('hybrid-function-select');
+    
+    if (!startBtn) {
+        console.error("Кнопка hybrid-start-btn не найдена!");
+        return;
+    }
+    
+    startBtn.onclick = function(e) {
+        e.preventDefault();
+        startHybrid();
+    };
+    
+    if (stopBtn) stopBtn.onclick = function(e) { e.preventDefault(); stopHybrid(); };
+    if (resetBtn) resetBtn.onclick = function(e) { e.preventDefault(); resetHybrid(); };
+    if (funcSelect) funcSelect.onchange = function() { updateHybridFunctionInfo(); resetHybrid(); };
+    
+    updateHybridFunctionInfo();
+    resetHybrid();
+    console.log("8-я лабораторная инициализирована успешно!");
+}
+
+if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', initHybridLab);
+} else {
+    initHybridLab();
+}
