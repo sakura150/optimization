@@ -4560,9 +4560,6 @@ if (document.readyState === 'loading') {
 }
 
 /////8888888888
-// ========== ЛАБОРАТОРНАЯ РАБОТА №8: ГИБРИДНЫЙ АЛГОРИТМ (ГА + PSO) ==========
-
-// Доступные целевые функции
 const hybridFunctions = {
     sphere: {
         name: 'Сфера',
@@ -4608,19 +4605,16 @@ function getCurrentHybridFunction() {
     return hybridFunctions[funcName];
 }
 
-// Обновить информацию о функции
 function updateHybridFunctionInfo() {
     const funcInfo = getCurrentHybridFunction();
     document.getElementById('hybrid-func-info').innerHTML = funcInfo.info;
     
-    // Обновляем диапазоны поиска
     const range = funcInfo.range;
     document.getElementById('hybrid-x-min').value = range[0];
     document.getElementById('hybrid-x-max').value = range[1];
     document.getElementById('hybrid-y-min').value = range[0];
     document.getElementById('hybrid-y-max').value = range[1];
     
-    // Перерисовываем поверхность
     const xMin = range[0];
     const xMax = range[1];
     const yMin = range[0];
@@ -4647,7 +4641,6 @@ function updateHybridFunctionInfo() {
     });
 }
 
-// Обновленная функция создания поверхности
 function createHybridSurface(func, xRange, yRange) {
     const x = [], y = [], z = [];
     const steps = 50;
@@ -4668,7 +4661,6 @@ function createHybridSurface(func, xRange, yRange) {
     return { x, y, z };
 }
 
-// HybridGA - обновлен для работы с любой функцией
 class HybridGA {
     constructor(popSize, generations, crossoverProb, mutationProb, xRange, yRange, func) {
         this.popSize = popSize;
